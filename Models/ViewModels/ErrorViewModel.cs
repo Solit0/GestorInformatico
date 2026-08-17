@@ -1,4 +1,4 @@
-namespace GestorInformatico.Models;
+namespace GestorInformatico.Models.ViewModels;
 
 public class ErrorViewModel
 {

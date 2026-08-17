@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using GestorInformatico.Models;
+using GestorInformatico.Models.ViewModels;
 
 namespace GestorInformatico.Controllers;
 
