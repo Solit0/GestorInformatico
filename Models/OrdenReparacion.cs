@@ -20,8 +20,8 @@ public class OrdenReparacion
     public ICollection<DetalleOrdenRepuesto> RepuestosUsados { get; set; } = new List<DetalleOrdenRepuesto>();
     
     [Required(ErrorMessage = "El tecnico es obligatorio")]
-    public int TecnicoId { get; set; }
-    public Tecnicos Tecnico { get; set; }
+    public string TecnicoId { get; set; }
+    public Usuarios Tecnico { get; set; }
     
     [Required(ErrorMessage = "El estado es obligatorio")]
     [AllowedValues("Pendiente", "En reparacion", "Reparado", "No se pudo")]

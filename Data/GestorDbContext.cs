@@ -1,16 +1,16 @@
 using GestorInformatico.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace GestorInformatico.Data;
 
-public class GestorDbContext : DbContext
+public class GestorDbContext : IdentityDbContext<Usuarios>
 {
     public GestorDbContext(DbContextOptions<GestorDbContext> options) : base(options)
     { }
     
     public DbSet<Clientes> Clientes { get; set; }
     public DbSet<Equipos> Equipos { get; set; }
-    public DbSet<Tecnicos> Tecnicos { get; set; }
     public DbSet<OrdenReparacion> OrdenesReparacion { get; set; }
     public DbSet<Repuestos> Repuestos { get; set; }
     public DbSet<DetalleOrdenRepuesto> DetallesOrdenRepuesto { get; set; }

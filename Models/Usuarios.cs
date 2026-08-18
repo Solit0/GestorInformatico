@@ -1,22 +1,12 @@
 namespace GestorInformatico.Models;
 using System.ComponentModel.DataAnnotations;
-public class Tecnicos
+using Microsoft.AspNetCore.Identity;
+public class Usuarios : IdentityUser
 {
-    public int Id { get; set; }
     
     [Required(ErrorMessage = "El nombre es obligatorio")]
     [StringLength(120)]
     public string Nombre { get; set; }
-    
-    [Required(ErrorMessage = "El email es obligatorio")]
-    [EmailAddress]
-    [StringLength(100)]
-    public string Email { get; set; }
-    
-    [Required(ErrorMessage = "El telefono es obligatorio")]
-    [StringLength(9)]
-    [RegularExpression(@"^[0-9]{4}-?[0-9]{4}$", ErrorMessage = "Debe ser un teléfono válido (ej. 2222-3333 o 22223333)")]
-    public string Telefono { get; set; }
     
     [StringLength(120)]
     public string? Direccion { get; set; }
