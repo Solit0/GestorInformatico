@@ -25,4 +25,6 @@ public class Usuarios : IdentityUser
     
     public ICollection<OrdenReparacion> OrdenesReparacion { get; set; } = new List<OrdenReparacion>();
     
+    public bool DebeCambiarPassword { get; set; } = true;
+    
 }

@@ -34,4 +34,8 @@ public class OrdenReparacion
     [StringLength(1000)]
     [Required(ErrorMessage = "La descripcion es obligatoria")]
     public string Descripcion { get; set; }
+    
+    public bool NotificacionEnviada { get; set; } = false;
+    
+    public DateTime? FechaNotificacion { get; set; }
 }

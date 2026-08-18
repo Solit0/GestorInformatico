@@ -27,4 +27,5 @@ public class Clientes
     
     public ICollection<Equipos> Equipos { get; set; } = new List<Equipos>();
     
+    public bool RecibeNotificacionesCorreo { get; set; } = true;
 }

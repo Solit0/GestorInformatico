@@ -1,0 +1,227 @@
+@{
+    ViewData["Title"] = "Recepción y Creación de Órdenes";
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Tecnico" asp-action="Index" class="text-decoration-none"><i class="bi bi-house-door me-1"></i>Panel Técnico</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Recepción y Creación de Órdenes</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="h3 fw-bold text-dark mb-1">
+                <i class="bi bi-clipboard2-plus text-info me-2"></i>Recepción y Creación de Órdenes
+            </h2>
+            <p class="text-muted mb-0">Registra el ingreso de nuevos equipos a reparación y genera órdenes de servicio técnico.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a asp-controller="Tecnico" asp-action="FlujoTrabajo" class="btn btn-outline-warning text-dark">
+                <i class="bi bi-kanban me-1"></i>Ir a Flujo de Trabajo
+            </a>
+            <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="btn btn-outline-secondary">
+                <i class="bi bi-person-lines-fill me-1"></i>Ver Clientes/Equipos
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Formulario de Nueva Orden -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-primary bg-gradient text-white py-3">
+                    <h5 class="card-title mb-0 fw-bold fs-6">
+                        <i class="bi bi-file-earmark-plus me-2"></i>Nueva Orden de Reparación
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form onsubmit="return false;">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Cliente</label>
+                            <div class="input-group">
+                                <select class="form-select" id="selectCliente">
+                                    <option selected disabled>Seleccionar cliente registrado...</option>
+                                    <option value="1">María Julia Gómez (04829182-3)</option>
+                                    <option value="2">Juan Carlos Pérez (01928374-5)</option>
+                                    <option value="3">Soluciones IT S.A. de C.V. (05566778-9)</option>
+                                </select>
+                                <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="btn btn-outline-secondary" title="Nuevo Cliente">
+                                    <i class="bi bi-plus"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Equipo del Cliente</label>
+                            <select class="form-select" id="selectEquipo">
+                                <option selected disabled>Seleccionar equipo...</option>
+                                <option value="101">Laptop Dell Inspiron 15 (SN-DL-89218301)</option>
+                                <option value="102">PC Gamer Asus ROG (SN-AS-55091238)</option>
+                                <option value="103">MacBook Pro M1 (SN-AP-99014231)</option>
+                                <option value="104">Impresora Multifuncional HP (SN-HP-33109284)</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small">Fecha de Ingreso</label>
+                                <input type="datetime-local" class="form-control" value="2026-08-17T18:57" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary small">Técnico Asignado</label>
+                                <select class="form-select">
+                                    <option selected>Técnico Principal (Tú)</option>
+                                    <option>Roberto Flores</option>
+                                    <option>Elena Martínez</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Descripción de la Falla / Problema Reportado</label>
+                            <textarea class="form-control" rows="3" placeholder="Detalla el problema que presenta el equipo según el cliente..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Observaciones y Diagnóstico Inicial</label>
+                            <textarea class="form-control" rows="2" placeholder="Cargador incluido, rayones visibles, accesorios entregados..."></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-secondary small">Estado Inicial</label>
+                            <select class="form-select" disabled>
+                                <option selected>Pendiente</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary fw-semibold py-2">
+                                <i class="bi bi-check2-circle me-1"></i>Generar y Emitir Orden
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary btn-sm">Limpiar Formulario</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Listado de Órdenes Recientes y Filtros -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3 mb-3">
+                <div class="card-body p-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-7">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" placeholder="Buscar por Nº de orden, cliente o modelo..." />
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <select class="form-select">
+                                <option selected>Filtrar: Todas las fechas</option>
+                                <option>Ingresados hoy</option>
+                                <option>Esta semana</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold text-dark fs-6"><i class="bi bi-list-check me-2 text-primary"></i>Órdenes Registradas Recientemente</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Orden</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente / Equipo</th>
+                                    <th>Estado</th>
+                                    <th class="text-end pe-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-bold text-primary">#ORD-1025</div>
+                                        <span class="text-muted small">Técnico: Roberto F.</span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold">17/08/2026</div>
+                                        <div class="text-muted small">18:30</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">María Julia Gómez</div>
+                                        <span class="text-muted small">Laptop Dell Inspiron 15</span>
+                                    </td>
+                                    <td><span class="badge bg-secondary">Pendiente</span></td>
+                                    <td class="text-end pe-3">
+                                        <a asp-controller="Tecnico" asp-action="FlujoTrabajo" class="btn btn-sm btn-outline-warning text-dark" title="Ver en Tablero">
+                                            <i class="bi bi-kanban"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-secondary" title="Imprimir Comprobante">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-bold text-primary">#ORD-1024</div>
+                                        <span class="text-muted small">Técnico: Elena M.</span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold">17/08/2026</div>
+                                        <div class="text-muted small">14:15</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">Juan Carlos Pérez</div>
+                                        <span class="text-muted small">PC Gamer Asus ROG</span>
+                                    </td>
+                                    <td><span class="badge bg-warning text-dark">En reparación</span></td>
+                                    <td class="text-end pe-3">
+                                        <a asp-controller="Tecnico" asp-action="FlujoTrabajo" class="btn btn-sm btn-outline-warning text-dark" title="Ver en Tablero">
+                                            <i class="bi bi-kanban"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-secondary" title="Imprimir Comprobante">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-bold text-primary">#ORD-1023</div>
+                                        <span class="text-muted small">Técnico: Principal</span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold">16/08/2026</div>
+                                        <div class="text-muted small">10:00</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">Soluciones IT S.A.</div>
+                                        <span class="text-muted small">MacBook Pro M1</span>
+                                    </td>
+                                    <td><span class="badge bg-success">Reparado</span></td>
+                                    <td class="text-end pe-3">
+                                        <a asp-controller="Tecnico" asp-action="FlujoTrabajo" class="btn btn-sm btn-outline-warning text-dark" title="Ver en Tablero">
+                                            <i class="bi bi-kanban"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-secondary" title="Imprimir Comprobante">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
