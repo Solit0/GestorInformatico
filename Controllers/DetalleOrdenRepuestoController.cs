@@ -1,6 +1,6 @@
 namespace GestorInformatico.Controllers;
 
-public class UsoRepuestoController
+public class DetalleOrdenRepuestoController
 {
     
 }
