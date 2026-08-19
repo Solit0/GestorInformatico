@@ -14,6 +14,7 @@ public class GestorDbContext : IdentityDbContext<Usuarios>
     public DbSet<OrdenReparacion> OrdenesReparacion { get; set; }
     public DbSet<Repuestos> Repuestos { get; set; }
     public DbSet<DetalleOrdenRepuesto> DetallesOrdenRepuesto { get; set; }
+    public DbSet<Categorias> Categorias { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

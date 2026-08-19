@@ -1,3 +1,4 @@
+@model GestorInformatico.Models.ViewModels.LoginViewModels.InicioSesionViewModel
 @{
     ViewData["Title"] = "Iniciar Sesión";
     ViewData["HideNavbar"] = true;
@@ -16,35 +17,44 @@
                         <p class="text-muted small">Ingresa tus credenciales para acceder a GestorInformático</p>
                     </div>
 
-                    <form action="#" method="post" onsubmit="return false;">
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                    {
+                        <div class="alert alert-danger py-2 px-3 small border-0 mb-3">
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-0"></div>
+                        </div>
+                    }
+
+                    <form asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
                         <div class="mb-3">
-                            <label for="email" class="form-label fw-semibold text-secondary small">Correo Electrónico / Usuario</label>
+                            <label asp-for="CorreoElectronico" class="form-label fw-semibold text-secondary small">Correo Electrónico / Usuario</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
-                                <input type="email" class="form-control border-start-0 ps-0" id="email" placeholder="usuario@ejemplo.com" required />
+                                <input asp-for="CorreoElectronico" class="form-control border-start-0 ps-0" placeholder="usuario@ejemplo.com" required />
                             </div>
+                            <span asp-validation-for="CorreoElectronico" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label for="password" class="form-label fw-semibold text-secondary small mb-0">Contraseña</label>
+                                <label asp-for="Contrasena" class="form-label fw-semibold text-secondary small mb-0">Contraseña</label>
                                 <a asp-controller="Auth" asp-action="RecuperarPassword" class="text-decoration-none small text-primary">¿Olvidaste tu contraseña?</a>
                             </div>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
-                                <input type="password" class="form-control border-start-0 ps-0" id="password" placeholder="••••••••" required />
+                                <input asp-for="Contrasena" type="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required />
                             </div>
+                            <span asp-validation-for="Contrasena" class="text-danger small"></span>
                         </div>
 
                         <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <input asp-for="RecordarSesion" class="form-check-input" type="checkbox" id="rememberMe">
                             <label class="form-check-label text-muted small" for="rememberMe">
                                 Recordar mi sesión
                             </label>
                         </div>
 
                         <div class="d-grid gap-2 mb-4">
-                            <button type="button" class="btn btn-primary py-2 fw-semibold">
+                            <button type="submit" class="btn btn-primary py-2 fw-semibold">
                                 <i class="bi bi-box-arrow-in-right me-2"></i>Acceder
                             </button>
                         </div>
@@ -55,20 +65,6 @@
                             </p>
                         </div>
                     </form>
-
-                    <hr class="my-4 text-muted opacity-25" />
-
-                    <div class="text-center">
-                        <p class="text-muted small mb-2">Acceso rápido para revisión de vistas:</p>
-                        <div class="d-flex justify-content-center gap-2">
-                            <a asp-controller="Tecnico" asp-action="Index" class="btn btn-sm btn-outline-info">
-                                <i class="bi bi-tools me-1"></i>Vista Técnico
-                            </a>
-                            <a asp-controller="Administrador" asp-action="Index" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-shield-check me-1"></i>Vista Administrador
-                            </a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

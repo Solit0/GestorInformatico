@@ -1,3 +1,4 @@
+@model GestorInformatico.Models.ViewModels.Usuarios.GestionUsuariosViewModel
 @{
     ViewData["Title"] = "Gestión de Usuarios";
 }
@@ -29,38 +30,60 @@
         </div>
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
     <!-- Barra de Búsqueda y Filtros -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <form method="get" asp-controller="Administrador" asp-action="Usuarios" class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-body p-3">
             <div class="row g-2 align-items-center">
                 <div class="col-md-5">
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" placeholder="Buscar por nombre, correo, DUI o usuario..." />
+                        <input type="text" name="terminoBusqueda" value="@Model.TerminoBusqueda" class="form-control" placeholder="Buscar por nombre, correo, DUI o usuario..." />
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select">
-                        <option selected>Todos los roles</option>
-                        <option>Administrador</option>
-                        <option>Técnico</option>
+                    <select name="rolSeleccionado" class="form-select">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.RolSeleccionado))">Todos los roles</option>
+                        <option value="Administrador" selected="@(Model.RolSeleccionado == "Administrador")">Administrador</option>
+                        <option value="Tecnico" selected="@(Model.RolSeleccionado == "Tecnico" || Model.RolSeleccionado == "Técnico")">Técnico</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select class="form-select">
-                        <option selected>Todos los estados</option>
-                        <option>Activo</option>
-                        <option>Inactivo / Bloqueado</option>
+                    <select name="estadoSeleccionado" class="form-select">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.EstadoSeleccionado))">Todos los estados</option>
+                        <option value="Activo" selected="@(Model.EstadoSeleccionado == "Activo")">Activo</option>
+                        <option value="Inactivo" selected="@(Model.EstadoSeleccionado == "Inactivo" || Model.EstadoSeleccionado == "Inactivo / Bloqueado")">Inactivo / Bloqueado</option>
                     </select>
                 </div>
-                <div class="col-md-2 text-md-end">
-                    <button type="button" class="btn btn-outline-secondary w-100">
+                <div class="col-md-2 text-md-end d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-secondary w-100">
                         <i class="bi bi-funnel me-1"></i>Filtrar
                     </button>
+                    @if (!string.IsNullOrEmpty(Model.TerminoBusqueda) || !string.IsNullOrEmpty(Model.RolSeleccionado) || !string.IsNullOrEmpty(Model.EstadoSeleccionado))
+                    {
+                        <a asp-controller="Administrador" asp-action="Usuarios" class="btn btn-outline-danger" title="Limpiar filtros">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    }
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 
     <!-- Tabla de Usuarios -->
     <div class="card border-0 shadow-sm rounded-3">
@@ -78,106 +101,82 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="ps-3">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 38px; height: 38px;">
-                                    <i class="bi bi-person-fill"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold text-dark">Alejandro Morales</div>
-                                    <span class="text-muted small">admin_amorales</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div><i class="bi bi-envelope me-1 text-muted"></i>amorales@gestor.com</div>
-                            <span class="text-muted small"><i class="bi bi-telephone me-1"></i>7122-3344</span>
-                        </td>
-                        <td><code>01234567-8</code></td>
-                        <td>
-                            <div>Masculino</div>
-                            <span class="text-muted small">15/04/1990</span>
-                        </td>
-                        <td><span class="badge bg-dark">Administrador</span></td>
-                        <td><span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span></td>
-                        <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary" title="Editar Usuario"><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-outline-secondary" title="Cambiar Contraseña"><i class="bi bi-key"></i></button>
-                                <button class="btn btn-outline-danger" title="Desactivar"><i class="bi bi-slash-circle"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="ps-3">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 38px; height: 38px;">
-                                    <i class="bi bi-tools"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold text-dark">Roberto Flores</div>
-                                    <span class="text-muted small">tec_rflores</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div><i class="bi bi-envelope me-1 text-muted"></i>rflores@gestor.com</div>
-                            <span class="text-muted small"><i class="bi bi-telephone me-1"></i>7844-5566</span>
-                        </td>
-                        <td><code>02345678-9</code></td>
-                        <td>
-                            <div>Masculino</div>
-                            <span class="text-muted small">22/09/1995</span>
-                        </td>
-                        <td><span class="badge bg-primary">Técnico</span></td>
-                        <td><span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span></td>
-                        <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary" title="Editar Usuario"><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-outline-secondary" title="Cambiar Contraseña"><i class="bi bi-key"></i></button>
-                                <button class="btn btn-outline-danger" title="Desactivar"><i class="bi bi-slash-circle"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="ps-3">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 38px; height: 38px;">
-                                    <i class="bi bi-tools"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold text-dark">Elena Martínez</div>
-                                    <span class="text-muted small">tec_emartinez</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div><i class="bi bi-envelope me-1 text-muted"></i>emartinez@gestor.com</div>
-                            <span class="text-muted small"><i class="bi bi-telephone me-1"></i>7955-6677</span>
-                        </td>
-                        <td><code>03456789-0</code></td>
-                        <td>
-                            <div>Femenino</div>
-                            <span class="text-muted small">08/11/1998</span>
-                        </td>
-                        <td><span class="badge bg-primary">Técnico</span></td>
-                        <td><span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span></td>
-                        <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary" title="Editar Usuario"><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-outline-secondary" title="Cambiar Contraseña"><i class="bi bi-key"></i></button>
-                                <button class="btn btn-outline-danger" title="Desactivar"><i class="bi bi-slash-circle"></i></button>
-                            </div>
-                        </td>
-                    </tr>
+                    @if (Model.Usuarios == null || !Model.Usuarios.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-people fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                No se encontraron usuarios registrados con los criterios seleccionados.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var usuario in Model.Usuarios)
+                        {
+                            var esAdmin = usuario.Rol.Equals("Administrador", StringComparison.OrdinalIgnoreCase);
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="@(esAdmin ? "bg-dark" : "bg-primary") text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 38px; height: 38px;">
+                                            <i class="bi @(esAdmin ? "bi-person-fill" : "bi-tools")"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@usuario.Nombre</div>
+                                            <span class="text-muted small">@usuario.UserName</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div><i class="bi bi-envelope me-1 text-muted"></i>@usuario.Email</div>
+                                    <span class="text-muted small"><i class="bi bi-telephone me-1"></i>@(string.IsNullOrWhiteSpace(usuario.Telefono) ? "Sin teléfono" : usuario.Telefono)</span>
+                                </td>
+                                <td><code>@usuario.DUI</code></td>
+                                <td>
+                                    <div>@usuario.Sexo</div>
+                                    <span class="text-muted small">@usuario.FechaNacimiento.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    <span class="badge @(esAdmin ? "bg-dark" : "bg-primary")">@usuario.Rol</span>
+                                </td>
+                                <td>
+                                    @if (usuario.EsActivo)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inactivo / Bloqueado</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <form method="post" asp-controller="Administrador" asp-action="CambiarEstado" asp-route-id="@usuario.Id" class="d-inline">
+                                            @if (usuario.EsActivo)
+                                            {
+                                                <button type="submit" class="btn btn-outline-danger" title="Desactivar Usuario">
+                                                    <i class="bi bi-slash-circle"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-outline-success" title="Activar Usuario">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            }
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Modal Nuevo Usuario (Maqueta Visual) -->
+<!-- Modal Nuevo Usuario -->
 <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow">
@@ -185,62 +184,76 @@
                 <h5 class="modal-title fw-bold" id="modalUsuarioLabel"><i class="bi bi-person-plus-fill me-2"></i>Crear Nuevo Usuario</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body p-4">
-                <form onsubmit="return false;">
+            <form method="post" asp-controller="Administrador" asp-action="CrearUsuario">
+                <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Nombre Completo</label>
-                            <input type="text" class="form-control" placeholder="Ej. Juan Pérez" />
+                            <label asp-for="NuevoUsuario.Nombre" class="form-label fw-semibold text-secondary small">Nombre Completo</label>
+                            <input asp-for="NuevoUsuario.Nombre" class="form-control" placeholder="Ej. Juan Pérez" required />
+                            <span asp-validation-for="NuevoUsuario.Nombre" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Correo Electrónico (Login)</label>
-                            <input type="email" class="form-control" placeholder="usuario@gestor.com" />
+                            <label asp-for="NuevoUsuario.Email" class="form-label fw-semibold text-secondary small">Correo Electrónico (Login)</label>
+                            <input asp-for="NuevoUsuario.Email" type="email" class="form-control" placeholder="usuario@gestor.com" required />
+                            <span asp-validation-for="NuevoUsuario.Email" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">DUI (con guion)</label>
-                            <input type="text" class="form-control" placeholder="12345678-9" />
+                            <label asp-for="NuevoUsuario.DUI" class="form-label fw-semibold text-secondary small">DUI (con guion)</label>
+                            <input asp-for="NuevoUsuario.DUI" class="form-control" placeholder="12345678-9" required />
+                            <span asp-validation-for="NuevoUsuario.DUI" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Teléfono</label>
-                            <input type="tel" class="form-control" placeholder="7890-1234" />
+                            <label asp-for="NuevoUsuario.Telefono" class="form-label fw-semibold text-secondary small">Teléfono</label>
+                            <input asp-for="NuevoUsuario.Telefono" type="tel" class="form-control" placeholder="7890-1234" />
+                            <span asp-validation-for="NuevoUsuario.Telefono" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Rol en el Sistema</label>
-                            <select class="form-select">
-                                <option value="Tecnico" selected>Técnico</option>
+                            <label asp-for="NuevoUsuario.Rol" class="form-label fw-semibold text-secondary small">Rol en el Sistema</label>
+                            <select asp-for="NuevoUsuario.Rol" class="form-select" required>
+                                <option value="Tecnico">Técnico</option>
                                 <option value="Administrador">Administrador</option>
                             </select>
+                            <span asp-validation-for="NuevoUsuario.Rol" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Sexo</label>
-                            <select class="form-select">
-                                <option>Masculino</option>
-                                <option>Femenino</option>
+                            <label asp-for="NuevoUsuario.Sexo" class="form-label fw-semibold text-secondary small">Sexo</label>
+                            <select asp-for="NuevoUsuario.Sexo" class="form-select" required>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
                             </select>
+                            <span asp-validation-for="NuevoUsuario.Sexo" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Fecha de Nacimiento</label>
-                            <input type="date" class="form-control" />
+                            <label asp-for="NuevoUsuario.FechaNacimiento" class="form-label fw-semibold text-secondary small">Fecha de Nacimiento</label>
+                            <input asp-for="NuevoUsuario.FechaNacimiento" type="date" class="form-control" required />
+                            <span asp-validation-for="NuevoUsuario.FechaNacimiento" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Dirección</label>
-                            <input type="text" class="form-control" placeholder="Dirección de residencia" />
+                            <label asp-for="NuevoUsuario.Direccion" class="form-label fw-semibold text-secondary small">Dirección</label>
+                            <input asp-for="NuevoUsuario.Direccion" class="form-control" placeholder="Dirección de residencia" />
+                            <span asp-validation-for="NuevoUsuario.Direccion" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Contraseña Temporal</label>
-                            <input type="password" class="form-control" placeholder="••••••••" />
+                            <label asp-for="NuevoUsuario.Password" class="form-label fw-semibold text-secondary small">Contraseña Temporal</label>
+                            <input asp-for="NuevoUsuario.Password" type="password" class="form-control" placeholder="••••••••" required />
+                            <span asp-validation-for="NuevoUsuario.Password" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Confirmar Contraseña</label>
-                            <input type="password" class="form-control" placeholder="••••••••" />
+                            <label asp-for="NuevoUsuario.ConfirmPassword" class="form-label fw-semibold text-secondary small">Confirmar Contraseña</label>
+                            <input asp-for="NuevoUsuario.ConfirmPassword" type="password" class="form-control" placeholder="••••••••" required />
+                            <span asp-validation-for="NuevoUsuario.ConfirmPassword" class="text-danger small"></span>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Guardar Usuario</button>
-            </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark">Guardar Usuario</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
