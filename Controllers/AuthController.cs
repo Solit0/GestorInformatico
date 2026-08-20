@@ -118,10 +118,25 @@ public class AuthController : Controller
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var resetUrl = Url.Action(nameof(RestablecerPassword), "Auth", new { userId = user.Id, token }, Request.Scheme);
 
+        var cuerpoHtml = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px;'>
+                <h2 style='color: #0d6efd;'>Restablecer Contraseña</h2>
+                <p>Hola <strong>{user.Nombre}</strong>,</p>
+                <p>Has solicitado restablecer tu contraseña para ingresar a <strong>Gestor Informático</strong>.</p>
+                <p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{resetUrl}' style='background-color: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Restablecer mi Contraseña</a>
+                </div>
+                <p style='color: #6c757d; font-size: 0.9em;'>O copia y pega el siguiente enlace en tu navegador:</p>
+                <p style='word-break: break-all; color: #0d6efd; font-size: 0.85em;'>{resetUrl}</p>
+                <hr style='border: none; border-top: 1px solid #dee2e6; margin: 20px 0;' />
+                <p style='color: #888888; font-size: 0.8em;'>Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.</p>
+            </div>";
+
         await _emailService.EnviarCorreoAsync(
             user.Email!,
             "Restablecer contraseña - Gestor Informático",
-            $"Haz clic en el siguiente enlace para restablecer tu contraseña: {resetUrl}");
+            cuerpoHtml);
 
         TempData["Success"] = "Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.";
         return RedirectToAction(nameof(RecuperarPassword));

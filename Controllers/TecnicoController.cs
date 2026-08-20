@@ -10,6 +10,7 @@ using GestorInformatico.Models.ViewModels.FlujoTrabajo;
 using GestorInformatico.Models.ViewModels.Inventario;
 using GestorInformatico.Models.ViewModels.Ordenes;
 using GestorInformatico.Models.ViewModels.LoginViewModels;
+using GestorInformatico.Services;
 
 namespace GestorInformatico.Controllers;
 
@@ -18,11 +19,13 @@ public class TecnicoController : Controller
 {
     private readonly GestorDbContext _context;
     private readonly UserManager<Usuarios> _userManager;
+    private readonly IEmailService _emailService;
 
-    public TecnicoController(GestorDbContext context, UserManager<Usuarios> userManager)
+    public TecnicoController(GestorDbContext context, UserManager<Usuarios> userManager, IEmailService emailService)
     {
         _context = context;
         _userManager = userManager;
+        _emailService = emailService;
     }
 
     // ==================== DASHBOARD ====================
@@ -451,7 +454,13 @@ public class TecnicoController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CambiarEstadoOrden(int id, string nuevoEstado)
     {
-        var orden = await _context.OrdenesReparacion.FindAsync(id);
+        var orden = await _context.OrdenesReparacion
+            .Include(o => o.RepuestosUsados)
+            .Include(o => o.Equipo)
+                .ThenInclude(e => e.Cliente)
+            .Include(o => o.Tecnico)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
         if (orden == null)
         {
             TempData["Error"] = "Orden no encontrada.";
@@ -465,15 +474,81 @@ public class TecnicoController : Controller
             return RedirectToAction(nameof(FlujoTrabajo));
         }
 
+        if (nuevoEstado == "Reparado" && (orden.RepuestosUsados == null || !orden.RepuestosUsados.Any()))
+        {
+            TempData["Error"] = "No se puede marcar la orden como reparada sin haber seleccionado los repuestos utilizados.";
+            return RedirectToAction(nameof(FlujoTrabajo));
+        }
+
         orden.Estado = nuevoEstado;
         if (nuevoEstado == "Reparado" || nuevoEstado == "No se pudo")
         {
             orden.FechaSalida = DateTime.Now;
         }
 
+        if (nuevoEstado == "Reparado")
+        {
+            var cliente = orden.Equipo?.Cliente;
+            if (cliente != null && cliente.RecibeNotificacionesCorreo && !string.IsNullOrWhiteSpace(cliente.Email))
+            {
+                var equipoInfo = orden.Equipo != null ? $"{orden.Equipo.Nombre} ({orden.Equipo.Marca} {orden.Equipo.Modelo})" : "su equipo";
+                var asunto = $"¡Su equipo está listo! - Orden #{orden.Id} - Gestor Informático";
+                var cuerpoHtml = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px;'>
+                        <h2 style='color: #198754;'>¡Su equipo está listo para entrega!</h2>
+                        <p>Estimado/a <strong>{cliente.Nombre}</strong>,</p>
+                        <p>Le notificamos que la reparación de su equipo <strong>{equipoInfo}</strong> correspondiente a la orden <strong>#{orden.Id}</strong> ha sido completada con éxito.</p>
+                        <div style='background-color: #f8f9fa; border-left: 4px solid #198754; padding: 15px; margin: 20px 0; border-radius: 4px;'>
+                            <p style='margin: 0 0 8px 0;'><strong>Detalles del servicio:</strong></p>
+                            <ul style='margin: 0; padding-left: 20px;'>
+                                <li><strong>Nº de Orden:</strong> #{orden.Id}</li>
+                                <li><strong>Equipo:</strong> {equipoInfo}</li>
+                                <li><strong>Número de Serie:</strong> {orden.Equipo?.NumeroSerie ?? "N/A"}</li>
+                                <li><strong>Diagnóstico / Trabajo realizado:</strong> {orden.Descripcion}</li>
+                                <li><strong>Fecha de Finalización:</strong> {orden.FechaSalida?.ToString("dd/MM/yyyy HH:mm") ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm")}</li>
+                            </ul>
+                        </div>
+                        <p>Ya puede presentarse a nuestro taller para retirar su equipo en nuestro horario de atención.</p>
+                        <p>¡Gracias por su preferencia!</p>
+                        <hr style='border: none; border-top: 1px solid #dee2e6; margin: 20px 0;' />
+                        <p style='color: #888888; font-size: 0.8em;'>Taller Gestor Informático</p>
+                    </div>";
+
+                await _emailService.EnviarCorreoAsync(cliente.Email.Trim(), asunto, cuerpoHtml);
+                orden.NotificacionEnviada = true;
+                orden.FechaNotificacion = DateTime.Now;
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         TempData["Success"] = $"Orden #{orden.Id} cambiada a '{nuevoEstado}'.";
+        return RedirectToAction(nameof(FlujoTrabajo));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FinalizarOrden(int id)
+    {
+        var orden = await _context.OrdenesReparacion
+            .Include(o => o.RepuestosUsados)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (orden == null)
+        {
+            TempData["Error"] = "Orden no encontrada.";
+            return RedirectToAction(nameof(FlujoTrabajo));
+        }
+
+        if (orden.RepuestosUsados != null && orden.RepuestosUsados.Any())
+        {
+            _context.DetallesOrdenRepuesto.RemoveRange(orden.RepuestosUsados);
+        }
+
+        _context.OrdenesReparacion.Remove(orden);
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = $"Orden #{id} finalizada y eliminada correctamente.";
         return RedirectToAction(nameof(FlujoTrabajo));
     }
 

@@ -164,6 +164,14 @@
                                             </a>
                                         </div>
                                     }
+                                    else
+                                    {
+                                        <div class="mb-3">
+                                            <a asp-controller="Tecnico" asp-action="Inventario" class="badge bg-warning text-dark text-decoration-none" title="Debe seleccionar repuestos utilizados en inventario">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Sin repuestos (requerido)
+                                            </a>
+                                        </div>
+                                    }
                                     <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                         <span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>@orden.NombreTecnico</span>
                                         <div class="btn-group btn-group-sm">
@@ -173,12 +181,21 @@
                                                 <input type="hidden" name="nuevoEstado" value="No se pudo" />
                                                 <button type="submit" class="btn btn-outline-danger" title="Marcar No se pudo"><i class="bi bi-x-circle"></i></button>
                                             </form>
-                                            <form asp-controller="Tecnico" asp-action="CambiarEstadoOrden" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@orden.Id" />
-                                                <input type="hidden" name="nuevoEstado" value="Reparado" />
-                                                <button type="submit" class="btn btn-outline-success" title="Marcar Reparado"><i class="bi bi-check-lg"></i> Listo</button>
-                                            </form>
+                                            @if (orden.CantidadRepuestos > 0)
+                                            {
+                                                <form asp-controller="Tecnico" asp-action="CambiarEstadoOrden" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@orden.Id" />
+                                                    <input type="hidden" name="nuevoEstado" value="Reparado" />
+                                                    <button type="submit" class="btn btn-outline-success" title="Marcar Reparado"><i class="bi bi-check-lg"></i> Listo</button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-outline-secondary disabled" title="Debe asignar repuestos para marcar como reparado" disabled>
+                                                    <i class="bi bi-check-lg"></i> Listo
+                                                </button>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -219,11 +236,23 @@
                                     <p class="small text-secondary mb-2 bg-light p-2 rounded">
                                         <strong>@orden.EtiquetaDescripcion</strong> @orden.Descripcion
                                     </p>
+                                    @if (orden.CantidadRepuestos > 0)
+                                    {
+                                        <div class="mb-3">
+                                            <span class="badge bg-info text-dark">
+                                                <i class="bi bi-box-seam me-1"></i>@orden.TextoBadgeRepuestos
+                                            </span>
+                                        </div>
+                                    }
                                     <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                         <span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>@orden.NombreTecnico</span>
-                                        <span class="btn btn-sm btn-outline-primary disabled" title="Entregado">
-                                            <i class="bi bi-box-arrow-up-right me-1"></i>Entregado
-                                        </span>
+                                        <form asp-controller="Tecnico" asp-action="FinalizarOrden" method="post" class="d-inline" onsubmit="return confirm('¿Está seguro de finalizar y eliminar esta orden del tablero?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@orden.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Finalizar orden y eliminar del tablero">
+                                                <i class="bi bi-check2-all me-1"></i>Finalizado
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -265,9 +294,13 @@
                                     </p>
                                     <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                         <span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>@orden.NombreTecnico</span>
-                                        <span class="btn btn-sm btn-outline-secondary disabled" title="Cerrado">
-                                            <i class="bi bi-archive me-1"></i>Cerrado
-                                        </span>
+                                        <form asp-controller="Tecnico" asp-action="FinalizarOrden" method="post" class="d-inline" onsubmit="return confirm('¿Está seguro de finalizar y eliminar esta orden del tablero?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@orden.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Finalizar orden y eliminar del tablero">
+                                                <i class="bi bi-trash me-1"></i>Finalizado
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
