@@ -1,3 +1,4 @@
+@model GestorInformatico.Models.ViewModels.ClientesEquipos.ClientesEquiposVM
 @{
     ViewData["Title"] = "Gestión de Clientes y Equipos";
 }
@@ -29,16 +30,31 @@
         </div>
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
     <!-- Navegación por pestañas -->
     <ul class="nav nav-tabs mb-4" id="clientesEquiposTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active fw-semibold" id="clientes-tab" data-bs-toggle="tab" data-bs-target="#clientes-content" type="button" role="tab">
-                <i class="bi bi-people me-1"></i>Lista de Clientes (3)
+                <i class="bi bi-people me-1"></i>Lista de Clientes (@Model.TotalClientes)
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link fw-semibold" id="equipos-tab" data-bs-toggle="tab" data-bs-target="#equipos-content" type="button" role="tab">
-                <i class="bi bi-pc-display me-1"></i>Equipos Registrados (4)
+                <i class="bi bi-pc-display me-1"></i>Equipos Registrados (@Model.TotalEquipos)
             </button>
         </li>
     </ul>
@@ -46,28 +62,25 @@
     <div class="tab-content" id="clientesEquiposContent">
         <!-- Pestaña Clientes -->
         <div class="tab-pane fade show active" id="clientes-content" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <form method="get" asp-controller="Tecnico" asp-action="ClientesEquipos" class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-body p-3">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-6">
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control" placeholder="Buscar por nombre, DUI, teléfono o correo..." />
+                                <input type="text" name="terminoBusqueda" value="@Model.TerminoBusqueda" class="form-control" placeholder="Buscar por nombre, DUI, teléfono o correo..." />
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select">
-                                <option selected>Todos los estados</option>
-                                <option>Con equipos en taller</option>
-                                <option>Sin órdenes activas</option>
-                            </select>
+                        <div class="col-md-3 text-md-end">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Buscar</button>
+                            <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="btn btn-outline-secondary btn-sm">Limpiar</a>
                         </div>
                         <div class="col-md-3 text-md-end">
-                            <span class="text-muted small">Mostrando 3 de 3 clientes</span>
+                            <span class="text-muted small">Mostrando @Model.Clientes.Count de @Model.TotalClientes clientes</span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <div class="card border-0 shadow-sm rounded-3">
                 <div class="table-responsive">
@@ -84,66 +97,39 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#1</td>
-                                <td>
-                                    <div class="fw-bold text-dark">María Julia Gómez</div>
-                                    <span class="text-muted small">Cliente Frecuente</span>
-                                </td>
-                                <td><code>04829182-3</code></td>
-                                <td>
-                                    <div><i class="bi bi-telephone text-muted me-1"></i>7123-4567</div>
-                                    <div class="text-muted small"><i class="bi bi-envelope me-1"></i>maria.gomez@mail.com</div>
-                                </td>
-                                <td>Col. Escalón, Pje. 4, San Salvador</td>
-                                <td><span class="badge bg-primary rounded-pill">2 Equipos</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Crear Orden"><i class="bi bi-plus-circle"></i> Orden</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#2</td>
-                                <td>
-                                    <div class="fw-bold text-dark">Juan Carlos Pérez</div>
-                                    <span class="text-muted small">Cliente Particular</span>
-                                </td>
-                                <td><code>01928374-5</code></td>
-                                <td>
-                                    <div><i class="bi bi-telephone text-muted me-1"></i>7988-1122</div>
-                                    <div class="text-muted small"><i class="bi bi-envelope me-1"></i>juan.perez@gmail.com</div>
-                                </td>
-                                <td>Urb. Santa Elena, Calle Principal #12</td>
-                                <td><span class="badge bg-primary rounded-pill">1 Equipo</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Crear Orden"><i class="bi bi-plus-circle"></i> Orden</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#3</td>
-                                <td>
-                                    <div class="fw-bold text-dark">Soluciones IT S.A. de C.V.</div>
-                                    <span class="text-muted small">Cliente Corporativo</span>
-                                </td>
-                                <td><code>05566778-9</code></td>
-                                <td>
-                                    <div><i class="bi bi-telephone text-muted me-1"></i>2250-9900</div>
-                                    <div class="text-muted small"><i class="bi bi-envelope me-1"></i>soporte@solucionesit.com</div>
-                                </td>
-                                <td>Boulevard Los Próceres, Edificio B, Nivel 3</td>
-                                <td><span class="badge bg-primary rounded-pill">1 Equipo</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Crear Orden"><i class="bi bi-plus-circle"></i> Orden</a>
-                                    </div>
-                                </td>
-                            </tr>
+                            @if (!Model.Clientes.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                        No se encontraron clientes registrados.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var cliente in Model.Clientes)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@cliente.IdFormateado</td>
+                                        <td>
+                                            <div class="fw-bold text-dark">@cliente.Nombre</div>
+                                        </td>
+                                        <td><code>@cliente.DUI</code></td>
+                                        <td>
+                                            <div><i class="bi bi-telephone text-muted me-1"></i>@cliente.Telefono</div>
+                                            <div class="text-muted small"><i class="bi bi-envelope me-1"></i>@cliente.Email</div>
+                                        </td>
+                                        <td>@cliente.Direccion</td>
+                                        <td><span class="badge bg-primary rounded-pill">@cliente.TextoBadgeEquipos</span></td>
+                                        <td class="text-end pe-3">
+                                            <div class="btn-group btn-group-sm">
+                                                <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Crear Orden"><i class="bi bi-plus-circle"></i> Orden</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
                         </tbody>
                     </table>
                 </div>
@@ -152,27 +138,33 @@
 
         <!-- Pestaña Equipos -->
         <div class="tab-pane fade" id="equipos-content" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <form method="get" asp-controller="Tecnico" asp-action="ClientesEquipos" class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-body p-3">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-6">
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control" placeholder="Buscar por marca, modelo, número de serie o cliente..." />
+                                <input type="text" name="terminoBusqueda" value="@Model.TerminoBusqueda" class="form-control" placeholder="Buscar por marca, modelo, número de serie o cliente..." />
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <select class="form-select">
-                                <option selected>Todas las marcas</option>
-                                <option>Dell</option>
-                                <option>Asus</option>
-                                <option>Apple</option>
-                                <option>HP</option>
+                            <select name="marcaSeleccionada" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todas las marcas</option>
+                                @if (Model.ListaMarcas != null)
+                                {
+                                    @foreach (var marca in Model.ListaMarcas)
+                                    {
+                                        <option value="@marca.Value" selected="@marca.Selected">@marca.Text</option>
+                                    }
+                                }
                             </select>
+                        </div>
+                        <div class="col-md-3 text-md-end">
+                            <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="btn btn-outline-secondary btn-sm">Limpiar</a>
                         </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <div class="card border-0 shadow-sm rounded-3">
                 <div class="table-responsive">
@@ -189,74 +181,36 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#101</td>
-                                <td>
-                                    <div class="fw-bold text-dark"><i class="bi bi-laptop me-1 text-primary"></i>Laptop Dell Inspiron</div>
-                                    <span class="text-muted small">Portátil</span>
-                                </td>
-                                <td>Dell Inspiron 15 3000</td>
-                                <td><code>SN-DL-89218301</code></td>
-                                <td>María Julia Gómez</td>
-                                <td><span class="badge bg-info text-dark">2 reparaciones</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Nueva Orden"><i class="bi bi-file-earmark-plus"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#102</td>
-                                <td>
-                                    <div class="fw-bold text-dark"><i class="bi bi-pc-display me-1 text-primary"></i>PC Gamer Asus ROG</div>
-                                    <span class="text-muted small">Torre de Escritorio</span>
-                                </td>
-                                <td>Asus ROG Strix G15</td>
-                                <td><code>SN-AS-55091238</code></td>
-                                <td>Juan Carlos Pérez</td>
-                                <td><span class="badge bg-info text-dark">1 reparación</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Nueva Orden"><i class="bi bi-file-earmark-plus"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#103</td>
-                                <td>
-                                    <div class="fw-bold text-dark"><i class="bi bi-laptop me-1 text-primary"></i>MacBook Pro M1</div>
-                                    <span class="text-muted small">Laptop Apple</span>
-                                </td>
-                                <td>Apple MacBook Pro 14" (2021)</td>
-                                <td><code>SN-AP-99014231</code></td>
-                                <td>Soluciones IT S.A. de C.V.</td>
-                                <td><span class="badge bg-info text-dark">3 reparaciones</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Nueva Orden"><i class="bi bi-file-earmark-plus"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3 fw-semibold">#104</td>
-                                <td>
-                                    <div class="fw-bold text-dark"><i class="bi bi-printer me-1 text-primary"></i>Impresora Multifuncional HP</div>
-                                    <span class="text-muted small">Periférico</span>
-                                </td>
-                                <td>HP LaserJet Pro M404n</td>
-                                <td><code>SN-HP-33109284</code></td>
-                                <td>María Julia Gómez</td>
-                                <td><span class="badge bg-secondary">Sin historial</span></td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Nueva Orden"><i class="bi bi-file-earmark-plus"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
+                            @if (!Model.Equipos.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                        No se encontraron equipos registrados.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var equipo in Model.Equipos)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@equipo.IdFormateado</td>
+                                        <td>
+                                            <div class="fw-bold text-dark"><i class="bi bi-laptop me-1 text-primary"></i>@equipo.Nombre</div>
+                                        </td>
+                                        <td>@equipo.MarcaYModelo</td>
+                                        <td><code>@equipo.NumeroSerie</code></td>
+                                        <td>@equipo.NombreCliente</td>
+                                        <td><span class="badge @equipo.ClaseColorBadge">@equipo.TextoBadgeHistorial</span></td>
+                                        <td class="text-end pe-3">
+                                            <div class="btn-group btn-group-sm">
+                                                <a asp-controller="Tecnico" asp-action="RecepcionOrdenes" class="btn btn-outline-primary" title="Nueva Orden"><i class="bi bi-file-earmark-plus"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
                         </tbody>
                     </table>
                 </div>
@@ -265,106 +219,138 @@
     </div>
 </div>
 
-<!-- Modal Nuevo Cliente (Maqueta Visual) -->
+<!-- Modal Nuevo Cliente -->
 <div class="modal fade" id="modalCliente" tabindex="-1" aria-labelledby="modalClienteLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold" id="modalClienteLabel"><i class="bi bi-person-plus me-2"></i>Registrar Nuevo Cliente</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form onsubmit="return false;">
+            <form id="formCliente" asp-controller="Tecnico" asp-action="CrearCliente" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modalClienteLabel"><i class="bi bi-person-plus me-2"></i>Registrar Nuevo Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="clienteResumenErrores" class="alert alert-danger py-2 px-3 small mb-3" style="display:none"></div>
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label fw-semibold text-secondary small">Nombre Completo / Razón Social</label>
-                            <input type="text" class="form-control" placeholder="Ej. Ana Lucía Morales" />
+                            <label class="form-label fw-semibold text-secondary small">Nombre Completo / Razón Social <span class="text-danger">*</span></label>
+                            <input name="Nombre" id="clienteNombre" type="text" class="form-control" placeholder="Ej. Ana Lucía Morales" value="@Model.NuevoCliente?.Nombre" />
+                            <div class="text-danger small mt-1" id="errorClienteNombre" style="display:none"></div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">DUI</label>
-                            <input type="text" class="form-control" placeholder="00000000-0" />
+                            <label class="form-label fw-semibold text-secondary small">DUI <span class="text-danger">*</span></label>
+                            <input name="DUI" id="clienteDUI" type="text" class="form-control" placeholder="12345678-9" value="@Model.NuevoCliente?.DUI" />
+                            <div class="form-text small text-muted">Formato: 8 dígitos, guion y 1 dígito</div>
+                            <div class="text-danger small mt-1" id="errorClienteDUI" style="display:none"></div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Teléfono</label>
-                            <input type="tel" class="form-control" placeholder="2222-3333" />
+                            <label class="form-label fw-semibold text-secondary small">Teléfono <span class="text-danger">*</span></label>
+                            <input name="Telefono" id="clienteTelefono" type="tel" class="form-control" placeholder="2222-3333" value="@Model.NuevoCliente?.Telefono" />
+                            <div class="form-text small text-muted">Formato: 4 dígitos, guion opcional, 4 dígitos</div>
+                            <div class="text-danger small mt-1" id="errorClienteTelefono" style="display:none"></div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Correo Electrónico</label>
-                            <input type="email" class="form-control" placeholder="correo@cliente.com" />
+                            <label class="form-label fw-semibold text-secondary small">Correo Electrónico <span class="text-danger">*</span></label>
+                            <input name="Email" id="clienteEmail" type="email" class="form-control" placeholder="correo@cliente.com" value="@Model.NuevoCliente?.Email" />
+                            <div class="text-danger small mt-1" id="errorClienteEmail" style="display:none"></div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Dirección</label>
-                            <input type="text" class="form-control" placeholder="Dirección completa" />
+                            <label class="form-label fw-semibold text-secondary small">Dirección <span class="text-danger">*</span></label>
+                            <input name="Direccion" id="clienteDireccion" type="text" class="form-control" placeholder="Dirección completa" value="@Model.NuevoCliente?.Direccion" />
+                            <div class="text-danger small mt-1" id="errorClienteDireccion" style="display:none"></div>
                         </div>
                         <div class="col-12">
                             <div class="card border bg-light">
                                 <div class="card-body p-3">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="checkNotificacionCorreo" checked>
+                                        <input name="RecibeNotificacionesCorreo" class="form-check-input" type="checkbox" id="checkNotificacionCorreo" value="true" checked>
+                                        <input name="RecibeNotificacionesCorreo" type="hidden" value="false">
                                         <label class="form-check-label fw-semibold text-dark" for="checkNotificacionCorreo">
                                             <i class="bi bi-envelope-check me-1 text-primary"></i>Recibir notificación por correo electrónico al finalizar la reparación
                                         </label>
-                                        <div class="form-text text-muted small mt-1">
-                                            Se enviará un correo automático al cliente una vez el estado de la orden cambie a Reparado / Finalizado.
-                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Guardar Cliente</button>
-            </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cliente</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- Modal Nuevo Equipo (Maqueta Visual) -->
+<!-- Modal Nuevo Equipo -->
 <div class="modal fade" id="modalEquipo" tabindex="-1" aria-labelledby="modalEquipoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold" id="modalEquipoLabel"><i class="bi bi-laptop me-2"></i>Registrar Nuevo Equipo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form onsubmit="return false;">
+            <form id="formEquipo" asp-controller="Tecnico" asp-action="CrearEquipo" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modalEquipoLabel"><i class="bi bi-laptop me-2"></i>Registrar Nuevo Equipo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="equipoResumenErrores" class="alert alert-danger py-2 px-3 small mb-3" style="display:none"></div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Cliente Propietario</label>
-                            <select class="form-select">
-                                <option selected disabled>Seleccione un cliente...</option>
-                                <option>María Julia Gómez</option>
-                                <option>Juan Carlos Pérez</option>
-                                <option>Soluciones IT S.A. de C.V.</option>
+                            <label class="form-label fw-semibold text-secondary small">Cliente Propietario <span class="text-danger">*</span></label>
+                            <select name="NuevoEquipo.ClienteId" id="equipoClienteId" class="form-select">
+                                <option selected disabled value="">Seleccione un cliente...</option>
+                                @if (Model.NuevoEquipo?.ListaClientes != null)
+                                {
+                                    @foreach (var item in Model.NuevoEquipo.ListaClientes)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                }
                             </select>
+                            <div class="text-danger small mt-1" id="errorEquipoClienteId" style="display:none"></div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Nombre Identificador</label>
-                            <input type="text" class="form-control" placeholder="Ej. Laptop Trabajo / PC Oficina" />
+                            <label class="form-label fw-semibold text-secondary small">Nombre Identificador <span class="text-danger">*</span></label>
+                            <input name="NuevoEquipo.Nombre" id="equipoNombre" type="text" class="form-control" placeholder="Ej. Laptop Trabajo / PC Oficina" value="@Model.NuevoEquipo?.Nombre" />
+                            <div class="text-danger small mt-1" id="errorEquipoNombre" style="display:none"></div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-secondary small">Marca</label>
-                            <input type="text" class="form-control" placeholder="Ej. Dell, HP, Lenovo" />
+                            <label class="form-label fw-semibold text-secondary small">Marca <span class="text-danger">*</span></label>
+                            <input name="NuevoEquipo.Marca" id="equipoMarca" type="text" class="form-control" placeholder="Ej. Dell, HP, Lenovo" value="@Model.NuevoEquipo?.Marca" />
+                            <div class="text-danger small mt-1" id="errorEquipoMarca" style="display:none"></div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-secondary small">Modelo</label>
-                            <input type="text" class="form-control" placeholder="Ej. Inspiron 15 3520" />
+                            <label class="form-label fw-semibold text-secondary small">Modelo <span class="text-danger">*</span></label>
+                            <input name="NuevoEquipo.Modelo" id="equipoModelo" type="text" class="form-control" placeholder="Ej. Inspiron 15 3520" value="@Model.NuevoEquipo?.Modelo" />
+                            <div class="text-danger small mt-1" id="errorEquipoModelo" style="display:none"></div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold text-secondary small">Número de Serie</label>
-                            <input type="text" class="form-control" placeholder="SN-XXXX-XXXX" />
+                            <label class="form-label fw-semibold text-secondary small">Número de Serie <span class="text-danger">*</span></label>
+                            <input name="NuevoEquipo.NumeroSerie" id="equipoSerie" type="text" class="form-control" placeholder="SN-XXXX-XXXX" value="@Model.NuevoEquipo?.NumeroSerie" />
+                            <div class="text-danger small mt-1" id="errorEquipoSerie" style="display:none"></div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Guardar Equipo</button>
-            </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Equipo</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/validacion-formularios.js"></script>
+    @if (Model.ModalAbierto != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var modalEl = document.getElementById('@Model.ModalAbierto');
+                if (modalEl) { new bootstrap.Modal(modalEl).show(); }
+            });
+        </script>
+    }
+}

@@ -156,53 +156,93 @@
     </div>
 </div>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+
 <div class="modal fade" id="modalAsignarRepuesto" tabindex="-1" aria-labelledby="modalAsignarRepuestoLabel" aria-hidden="true">
     <div class="modal-dialog modal-md">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold" id="modalAsignarRepuestoLabel"><i class="bi bi-cart-plus me-2"></i>Asignar Repuesto a Orden</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form onsubmit="return false;">
+            <form asp-controller="Tecnico" asp-action="AsignarRepuesto" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="modalAsignarRepuestoLabel"><i class="bi bi-cart-plus me-2"></i>Asignar Repuesto a Orden</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div asp-validation-summary="All" class="alert alert-danger py-2 px-3 small mb-3" style="@(ViewData.ModelState.ErrorCount > 0 ? "" : "display:none")"></div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-secondary small">Seleccionar Orden de Reparación Activa</label>
-                        <select class="form-select">
-                            <option selected disabled>Seleccionar orden...</option>
-                            <option>#ORD-1025 - María Julia Gómez (Laptop Dell)</option>
-                            <option>#ORD-1024 - Juan Carlos Pérez (PC Gamer Asus ROG)</option>
-                            <option>#ORD-1026 - Soluciones IT (Impresora HP)</option>
+                        <select name="ordenReparacionId" class="form-select" required>
+                            <option selected disabled value="">Seleccionar orden...</option>
+                            @if (Model.FormularioAsignar?.ListaOrdenes != null)
+                            {
+                                @foreach (var item in Model.FormularioAsignar.ListaOrdenes)
+                                {
+                                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                }
+                            }
                         </select>
+                        <span asp-validation-for="FormularioAsignar.OrdenReparacionId" class="text-danger small"></span>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-secondary small">Repuesto a Utilizar</label>
-                        <select class="form-select">
-                            <option selected>SSD Kingston NV2 1TB ($68.50)</option>
-                            <option>Memoria RAM Corsair Vengeance 16GB ($45.00)</option>
-                            <option>Fuente de Poder EVGA 600W ($55.00)</option>
-                            <option>Pasta Térmica Arctic MX-4 ($8.00)</option>
+                        <select name="repuestoId" class="form-select" required>
+                            <option selected disabled value="">Seleccionar repuesto...</option>
+                            @if (Model.FormularioAsignar?.ListaRepuestos != null)
+                            {
+                                @foreach (var item in Model.FormularioAsignar.ListaRepuestos)
+                                {
+                                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                }
+                            }
                         </select>
+                        <span asp-validation-for="FormularioAsignar.RepuestoId" class="text-danger small"></span>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-secondary small">Cantidad a Descontar</label>
-                            <input type="number" class="form-control" value="1" min="1" max="10" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary small">Precio Unitario ($)</label>
-                            <input type="text" class="form-control" value="68.50" readonly />
+                            <input name="cantidad" type="number" class="form-control" value="@(Model.FormularioAsignar?.Cantidad > 0 ? Model.FormularioAsignar.Cantidad : 1)" min="1" max="10" required />
+                            <span asp-validation-for="FormularioAsignar.Cantidad" class="text-danger small"></span>
                         </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label fw-semibold text-secondary small">Nota / Justificación del Uso</label>
-                        <textarea class="form-control" rows="2" placeholder="Ej. Reemplazo por falla de sector en unidad original..."></textarea>
+                        <textarea name="nota" class="form-control" rows="2" placeholder="Ej. Reemplazo por falla de sector en unidad original...">@Model.FormularioAsignar?.Nota</textarea>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success" data-bs-dismiss="modal">Confirmar Asignación</button>
-            </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Asignación</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    @if (Model.ModalAbierto != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var modalEl = document.getElementById('@Model.ModalAbierto');
+                if (modalEl) {
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            });
+        </script>
+    }
+}

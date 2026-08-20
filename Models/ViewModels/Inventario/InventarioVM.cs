@@ -17,4 +17,8 @@ public class InventarioVM
     public IEnumerable<SelectListItem>? ListaEstados { get; set; }
     
     public List<VerInventarioViewModel> Repuestos { get; set; } = new List<VerInventarioViewModel>();
+
+    public AsignarRepuestoViewModel FormularioAsignar { get; set; } = new AsignarRepuestoViewModel();
+
+    public string? ModalAbierto { get; set; }
 }

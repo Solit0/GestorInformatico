@@ -1,13 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using GestorInformatico.Data;
 using GestorInformatico.Models;
+using GestorInformatico.Services;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services. AddDbContext<GestorDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")));
+builder.Services.AddScoped<IEmailService, ConsoleEmailService>();
+builder.Services.AddDbContext<GestorDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")));
 
 builder.Services.AddIdentity<Usuarios, IdentityRole>(options =>
     {

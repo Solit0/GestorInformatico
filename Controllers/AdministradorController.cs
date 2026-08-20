@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using GestorInformatico.Models.ViewModels.Usuarios;
 
 namespace GestorInformatico.Controllers;
 
+[Authorize]
 public class AdministradorController : Controller
 {
     private readonly GestorDbContext _context;

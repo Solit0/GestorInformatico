@@ -12,5 +12,9 @@ public class ClientesEquiposVM
     
     public List<ClientesViewModel> Clientes { get; set; } = new List<ClientesViewModel>();
     public List<EquiposViewModel> Equipos { get; set; } = new List<EquiposViewModel>();
-    
+
+    public CrearClienteFormViewModel NuevoCliente { get; set; } = new CrearClienteFormViewModel();
+    public CrearEquipoFormViewModel NuevoEquipo { get; set; } = new CrearEquipoFormViewModel();
+
+    public string? ModalAbierto { get; set; }
 }
