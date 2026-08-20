@@ -156,21 +156,20 @@ public class TecnicoController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CrearEquipo(ClientesEquiposVM model)
+    public async Task<IActionResult> CrearEquipo(CrearEquipoFormViewModel NuevoEquipo)
     {
-        var equipoModel = model.NuevoEquipo;
-        if (equipoModel == null || !ModelState.IsValid)
+        if (NuevoEquipo == null || !ModelState.IsValid)
         {
-            return await ReconstruirClientesEquipos(formEquipoFallido: equipoModel);
+            return await ReconstruirClientesEquipos(formEquipoFallido: NuevoEquipo);
         }
 
         var equipo = new Equipos
         {
-            ClienteId = equipoModel.ClienteId,
-            Nombre = equipoModel.Nombre.Trim(),
-            Marca = equipoModel.Marca.Trim(),
-            Modelo = equipoModel.Modelo.Trim(),
-            NumeroSerie = equipoModel.NumeroSerie.Trim()
+            ClienteId = NuevoEquipo.ClienteId,
+            Nombre = NuevoEquipo.Nombre.Trim(),
+            Marca = NuevoEquipo.Marca.Trim(),
+            Modelo = NuevoEquipo.Modelo.Trim(),
+            NumeroSerie = NuevoEquipo.NumeroSerie.Trim()
         };
 
         _context.Equipos.Add(equipo);
@@ -304,21 +303,21 @@ public class TecnicoController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CrearOrden(FormNuevaOrdenViewModel model)
+    public async Task<IActionResult> CrearOrden(FormNuevaOrdenViewModel FormularioNuevaOrden)
     {
         if (!ModelState.IsValid)
         {
-            return await ReconstruirRecepcionOrdenes(model);
+            return await ReconstruirRecepcionOrdenes(FormularioNuevaOrden);
         }
 
         var orden = new OrdenReparacion
         {
-            EquipoId = model.EquipoId,
-            TecnicoId = model.TecnicoId,
-            FechaIngreso = model.FechaIngreso,
-            Descripcion = model.Descripcion.Trim(),
-            Observaciones = model.Observaciones?.Trim(),
-            Estado = model.Estado,
+            EquipoId = FormularioNuevaOrden.EquipoId,
+            TecnicoId = FormularioNuevaOrden.TecnicoId,
+            FechaIngreso = FormularioNuevaOrden.FechaIngreso,
+            Descripcion = FormularioNuevaOrden.Descripcion.Trim(),
+            Observaciones = FormularioNuevaOrden.Observaciones?.Trim(),
+            Estado = FormularioNuevaOrden.Estado,
             NotificacionEnviada = false
         };
 
