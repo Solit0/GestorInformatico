@@ -23,6 +23,11 @@ public class Repuestos
     [Required(ErrorMessage = "El stock disponible es obligatorio")]
     [Range(0, int.MaxValue, ErrorMessage = "El stock disponible no puede ser negativo")]
     public int StockDisponible { get; set; }
-    
+
+    [StringLength(255)]
+    public string? ImagenUrl { get; set; }
+
+    public Guid ConcurrencyToken { get; set; } = Guid.NewGuid();
+
     public ICollection<DetalleOrdenRepuesto> HistorialUso { get; set; } = new List<DetalleOrdenRepuesto>();
 }

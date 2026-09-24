@@ -21,4 +21,7 @@ public class EditarRepuestoViewModel
     [Required(ErrorMessage = "El stock es obligatorio.")]
     [Range(0, int.MaxValue, ErrorMessage = "El stock no puede ser negativo.")]
     public int StockDisponible { get; set; }
+
+    // Solo informativo: se conserva cuando el formulario vuelve con errores.
+    public string? ImagenUrl { get; set; }
 }

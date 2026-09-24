@@ -2,12 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using GestorInformatico.Data;
 using GestorInformatico.Models;
 using GestorInformatico.Services;
+using GestorInformatico.Hubs;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddDbContext<GestorDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")));
@@ -54,6 +56,7 @@ app.UseRouting();
 app.UseAuthentication(); 
 app.UseAuthorization();
 app.MapStaticAssets();
+app.MapHub<StockHub>("/hubs/stock");
 app.MapControllerRoute(
         name: "default",
         pattern: "{controller=Auth}/{action=Login}/{id?}")

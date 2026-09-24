@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using GestorInformatico.Data;
+using GestorInformatico.Hubs;
 using GestorInformatico.Models;
 using GestorInformatico.Models.ViewModels;
 using GestorInformatico.Models.ViewModels.ClientesEquipos;
@@ -20,12 +22,14 @@ public class TecnicoController : Controller
     private readonly GestorDbContext _context;
     private readonly UserManager<Usuarios> _userManager;
     private readonly IEmailService _emailService;
+    private readonly IHubContext<StockHub> _hubContext;
 
-    public TecnicoController(GestorDbContext context, UserManager<Usuarios> userManager, IEmailService emailService)
+    public TecnicoController(GestorDbContext context, UserManager<Usuarios> userManager, IEmailService emailService, IHubContext<StockHub> hubContext)
     {
         _context = context;
         _userManager = userManager;
         _emailService = emailService;
+        _hubContext = hubContext;
     }
 
     // ==================== DASHBOARD ====================
@@ -643,12 +647,43 @@ public class TecnicoController : Controller
             PrecioUnitario = repuesto.Precio
         };
 
-        repuesto.StockDisponible -= cantidad;
-        _context.DetallesOrdenRepuesto.Add(detalle);
-        await _context.SaveChangesAsync();
+        // Transacción explícita: leer → modificar stock → guardar → confirmar.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
 
-        TempData["Success"] = $"Repuesto '{repuesto.Nombre}' (x{cantidad}) asignado a la orden #{orden.Id}.";
-        return RedirectToAction(nameof(Inventario));
+        try
+        {
+            repuesto.StockDisponible -= cantidad;
+            _context.DetallesOrdenRepuesto.Add(detalle);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // Notificar a todos los navegadores conectados SOLO después del commit exitoso.
+            await _hubContext.Clients.All.SendAsync("StockActualizado", repuesto.Id, repuesto.StockDisponible);
+
+            TempData["Success"] = $"Repuesto '{repuesto.Nombre}' (x{cantidad}) asignado a la orden #{orden.Id}.";
+            return RedirectToAction(nameof(Inventario));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otro usuario modificó el stock mientras tanto: no aplicamos datos viejos.
+            await transaction.RollbackAsync();
+            await _context.Entry(repuesto).ReloadAsync();
+
+            return await ReconstruirInventario(
+                formFallido: new AsignarRepuestoViewModel
+                {
+                    OrdenReparacionId = ordenReparacionId,
+                    RepuestoId = repuestoId,
+                    Cantidad = cantidad,
+                    Nota = nota
+                },
+                errorStock: $"El stock fue actualizado por otro usuario mientras intentaba asignar. El valor más reciente de '{repuesto.Nombre}' es {repuesto.StockDisponible} unidades. No se aplicó la asignación.");
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     private async Task<IActionResult> ReconstruirInventario(AsignarRepuestoViewModel? formFallido = null, string? errorStock = null)
@@ -696,7 +731,8 @@ public class TecnicoController : Controller
                 Descripcion = r.Tipo,
                 Tipo = r.Tipo,
                 Precio = r.Precio,
-                StockDisponible = r.StockDisponible
+                StockDisponible = r.StockDisponible,
+                ImagenUrl = r.ImagenUrl
             }).ToList(),
             FormularioAsignar = formulario,
             ModalAbierto = "modalAsignarRepuesto"
@@ -752,7 +788,8 @@ public class TecnicoController : Controller
                 Descripcion = r.Tipo,
                 Tipo = r.Tipo,
                 Precio = r.Precio,
-                StockDisponible = r.StockDisponible
+                StockDisponible = r.StockDisponible,
+                ImagenUrl = r.ImagenUrl
             }).ToList(),
             FormularioAsignar = new AsignarRepuestoViewModel
             {

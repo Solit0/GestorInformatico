@@ -9,6 +9,8 @@ public class RepuestoItemViewModel
     public int StockDisponible { get; set; }
     public int StockMinimo { get; set; } = 3;
 
+    public string? ImagenUrl { get; set; }
+
     public string Estado => StockDisponible == 0 ? "Agotado"
         : (StockDisponible < 3 ? "Stock Bajo" : "En Stock");
 
