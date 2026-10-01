@@ -1,0 +1,68 @@
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@10.0.11/dist/browser/signalr.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/stock')
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on('StockActualizado', function (productoId, nuevoStock) {
+            actualizarStockEnVista(productoId, nuevoStock);
+        });
+
+        connection.start().catch(function (err) {
+            console.error('No se pudo conectar al hub de stock:', err);
+        });
+    });
+
+    function actualizarStockEnVista(productoId, nuevoStock) {
+        nuevoStock = Number(nuevoStock);
+
+        // 1. Actualizar el número de stock en cada celda marcada.
+        var cantidades = document.querySelectorAll('.stock-cantidad[data-producto-id="' + productoId + '"]');
+        cantidades.forEach(function (el) {
+            el.textContent = nuevoStock;
+
+            var contenedor = el.closest('.stock-texto');
+            if (contenedor) {
+                contenedor.classList.remove('text-danger', 'text-warning');
+                if (nuevoStock === 0) {
+                    contenedor.classList.add('text-danger');
+                } else if (nuevoStock < 3) {
+                    contenedor.classList.add('text-warning');
+                }
+            }
+
+            // 2. Resaltar brevemente la celda que cambió.
+            var celda = el.closest('td');
+            if (celda) {
+                celda.classList.remove('table-danger', 'table-warning');
+                celda.classList.add(nuevoStock === 0 ? 'table-danger' : 'table-warning');
+                setTimeout(function () {
+                    celda.classList.remove('table-danger', 'table-warning');
+                }, 2000);
+            }
+        });
+
+        // 3. Actualizar el badge de estado de stock.
+        var badges = document.querySelectorAll('.stock-estado[data-producto-id="' + productoId + '"]');
+        badges.forEach(function (b) {
+            var texto = nuevoStock === 0 ? 'Agotado' : (nuevoStock < 3 ? 'Stock Bajo' : 'En Stock');
+            var clases = nuevoStock === 0
+                ? b.getAttribute('data-agotado')
+                : (nuevoStock < 3 ? b.getAttribute('data-bajo') : b.getAttribute('data-ok'));
+            b.textContent = texto;
+            b.className = 'badge stock-estado ' + (clases || 'bg-secondary');
+        });
+
+        // 4. Habilitar/deshabilitar el botón "Usar en Orden" según el stock.
+        var botones = document.querySelectorAll('.btn-usar-producto[data-producto-id="' + productoId + '"]');
+        botones.forEach(function (btn) {
+            var habilitado = nuevoStock > 0;
+            btn.disabled = !habilitado;
+            btn.innerHTML = habilitado
+                ? '<i class="bi bi-cart-plus me-1"></i>Usar en Orden'
+                : '<i class="bi bi-cart-plus me-1"></i>Sin Stock';
+        });
+    }
+</script>

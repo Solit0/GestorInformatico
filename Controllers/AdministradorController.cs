@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using GestorInformatico.Data;
+using GestorInformatico.Hubs;
 using GestorInformatico.Models;
 using GestorInformatico.Models.ViewModels.Administrador;
 using GestorInformatico.Models.ViewModels.Inventario;
@@ -13,18 +15,27 @@ namespace GestorInformatico.Controllers;
 [Authorize]
 public class AdministradorController : Controller
 {
+    private static readonly string[] ExtensionesImagenPermitidas = { ".jpg", ".jpeg", ".png", ".webp" };
+    private const long TamanoMaximoImagen = 5 * 1024 * 1024; // 5 MB
+
     private readonly GestorDbContext _context;
     private readonly UserManager<Usuarios> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IWebHostEnvironment _env;
+    private readonly IHubContext<StockHub> _hubContext;
 
     public AdministradorController(
         GestorDbContext context,
         UserManager<Usuarios> userManager,
-        RoleManager<IdentityRole> roleManager)
+        RoleManager<IdentityRole> roleManager,
+        IWebHostEnvironment env,
+        IHubContext<StockHub> hubContext)
     {
         _context = context;
         _userManager = userManager;
         _roleManager = roleManager;
+        _env = env;
+        _hubContext = hubContext;
     }
 
     public async Task<IActionResult> Index()
@@ -254,6 +265,18 @@ public class AdministradorController : Controller
 
     public async Task<IActionResult> Inventario(string? terminoBusqueda, string? categoriaSeleccionada, string? estadoSeleccionado)
     {
+        var viewModel = await ConstruirViewModel(terminoBusqueda, categoriaSeleccionada, estadoSeleccionado);
+        return View(viewModel);
+    }
+
+    private async Task<GestionInventarioViewModel> ConstruirViewModel(
+        string? terminoBusqueda = null,
+        string? categoriaSeleccionada = null,
+        string? estadoSeleccionado = null,
+        CrearRepuestoViewModel? nuevoRepuesto = null,
+        EditarRepuestoViewModel? repuestoEnEdicion = null,
+        string? modalAbierto = null)
+    {
         // 1. Categorías disponibles
         var categoriasDb = await _context.Categorias.AsNoTracking().Select(c => c.Nombre).ToListAsync();
         var categoriasEnRepuestos = await _context.Repuestos.AsNoTracking().Select(r => r.Tipo).Where(t => !string.IsNullOrEmpty(t)).Distinct().ToListAsync();
@@ -315,10 +338,11 @@ public class AdministradorController : Controller
             Tipo = r.Tipo,
             Precio = r.Precio,
             StockDisponible = r.StockDisponible,
+            ImagenUrl = r.ImagenUrl,
             PuedeEliminarse = !r.HistorialUso.Any()
         }).ToList();
 
-        var viewModel = new GestionInventarioViewModel
+        return new GestionInventarioViewModel
         {
             TotalRepuestos = totalRepuestos,
             TotalUnidades = totalUnidades,
@@ -331,21 +355,95 @@ public class AdministradorController : Controller
             EstadoSeleccionado = estadoSeleccionado,
             CategoriasDisponibles = todasCategorias,
             Repuestos = listaRepuestos,
-            NuevoRepuesto = new CrearRepuestoViewModel(),
-            NuevaCategoria = new CrearCategoriaViewModel()
+            NuevoRepuesto = nuevoRepuesto ?? new CrearRepuestoViewModel(),
+            NuevaCategoria = new CrearCategoriaViewModel(),
+            RepuestoEnEdicion = repuestoEnEdicion,
+            ModalAbierto = modalAbierto
         };
+    }
 
-        return View(viewModel);
+    private bool ValidarImagen(IFormFile imagenArchivo, out string error)
+    {
+        error = string.Empty;
+
+        var extension = Path.GetExtension(imagenArchivo.FileName).ToLowerInvariant();
+        if (!ExtensionesImagenPermitidas.Contains(extension))
+        {
+            error = "Formato de imagen no permitido. Solo se aceptan archivos .jpg, .jpeg, .png y .webp.";
+            return false;
+        }
+
+        if (imagenArchivo.Length == 0)
+        {
+            error = "El archivo de imagen está vacío.";
+            return false;
+        }
+
+        if (imagenArchivo.Length > TamanoMaximoImagen)
+        {
+            error = "La imagen no puede superar los 5 MB.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<string> GuardarImagenAsync(IFormFile imagenArchivo)
+    {
+        var extension = Path.GetExtension(imagenArchivo.FileName).ToLowerInvariant();
+        var nombreArchivo = $"{Guid.NewGuid()}{extension}";
+        var carpeta = Path.Combine(_env.WebRootPath, "uploads", "productos");
+        Directory.CreateDirectory(carpeta);
+
+        var rutaFisica = Path.Combine(carpeta, nombreArchivo);
+        using (var stream = new FileStream(rutaFisica, FileMode.Create))
+        {
+            await imagenArchivo.CopyToAsync(stream);
+        }
+
+        return $"/uploads/productos/{nombreArchivo}";
+    }
+
+    private void EliminarImagen(string? imagenUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imagenUrl))
+        {
+            return;
+        }
+
+        // Un fallo al borrar una imagen vieja NUNCA debe impedir guardar el producto.
+        try
+        {
+            var rutaFisica = Path.Combine(
+                _env.WebRootPath,
+                imagenUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+
+            if (System.IO.File.Exists(rutaFisica))
+            {
+                System.IO.File.Delete(rutaFisica);
+            }
+        }
+        catch (Exception)
+        {
+            // Se ignora deliberadamente: el producto ya quedó guardado.
+        }
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CrearRepuesto(CrearRepuestoViewModel nuevoRepuesto)
+    public async Task<IActionResult> CrearRepuesto(CrearRepuestoViewModel nuevoRepuesto, IFormFile? imagenArchivo)
     {
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Por favor, complete todos los campos requeridos para el repuesto.";
-            return RedirectToAction(nameof(Inventario));
+            return View(await ConstruirViewModel(nuevoRepuesto: nuevoRepuesto, modalAbierto: "modalNuevoRepuesto"));
+        }
+
+        if (imagenArchivo != null && !ValidarImagen(imagenArchivo, out var errorImagen))
+        {
+            ModelState.AddModelError("NuevoRepuesto", errorImagen);
+            TempData["Error"] = errorImagen;
+            return View(await ConstruirViewModel(nuevoRepuesto: nuevoRepuesto, modalAbierto: "modalNuevoRepuesto"));
         }
 
         var repuesto = new Repuestos
@@ -356,8 +454,15 @@ public class AdministradorController : Controller
             StockDisponible = nuevoRepuesto.StockDisponible
         };
 
+        if (imagenArchivo != null)
+        {
+            repuesto.ImagenUrl = await GuardarImagenAsync(imagenArchivo);
+        }
+
         _context.Repuestos.Add(repuesto);
         await _context.SaveChangesAsync();
+
+        await _hubContext.Clients.All.SendAsync("StockActualizado", repuesto.Id, repuesto.StockDisponible);
 
         TempData["Success"] = $"Repuesto '{repuesto.Nombre}' registrado exitosamente en el inventario.";
         return RedirectToAction(nameof(Inventario));
@@ -365,12 +470,19 @@ public class AdministradorController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditarRepuesto(EditarRepuestoViewModel repuestoEditado)
+    public async Task<IActionResult> EditarRepuesto(EditarRepuestoViewModel repuestoEditado, IFormFile? imagenArchivo)
     {
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Por favor, verifique los datos del repuesto antes de guardar.";
-            return RedirectToAction(nameof(Inventario));
+            return View(await ConstruirViewModel(repuestoEnEdicion: repuestoEditado, modalAbierto: $"modalEditarRepuesto_{repuestoEditado.Id}"));
+        }
+
+        if (imagenArchivo != null && !ValidarImagen(imagenArchivo, out var errorImagen))
+        {
+            ModelState.AddModelError(string.Empty, errorImagen);
+            TempData["Error"] = errorImagen;
+            return View(await ConstruirViewModel(repuestoEnEdicion: repuestoEditado, modalAbierto: $"modalEditarRepuesto_{repuestoEditado.Id}"));
         }
 
         var repuesto = await _context.Repuestos.FindAsync(repuestoEditado.Id);
@@ -380,12 +492,41 @@ public class AdministradorController : Controller
             return RedirectToAction(nameof(Inventario));
         }
 
+        var imagenAnterior = repuesto.ImagenUrl;
+        string? imagenNueva = null;
+
+        if (imagenArchivo != null)
+        {
+            imagenNueva = await GuardarImagenAsync(imagenArchivo);
+            repuesto.ImagenUrl = imagenNueva;
+        }
+
         repuesto.Nombre = repuestoEditado.Nombre.Trim();
         repuesto.Tipo = repuestoEditado.Tipo.Trim();
         repuesto.Precio = repuestoEditado.Precio;
         repuesto.StockDisponible = repuestoEditado.StockDisponible;
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch
+        {
+            // Si el guardado falla, no dejamos la imagen nueva huérfana en el disco.
+            if (imagenNueva != null)
+            {
+                EliminarImagen(imagenNueva);
+            }
+            throw;
+        }
+
+        // Se eliminó la imagen anterior solo después de guardar el nuevo, y un fallo aquí jamás impide guardar.
+        if (imagenNueva != null)
+        {
+            EliminarImagen(imagenAnterior);
+        }
+
+        await _hubContext.Clients.All.SendAsync("StockActualizado", repuesto.Id, repuesto.StockDisponible);
 
         TempData["Success"] = $"Repuesto '{repuesto.Nombre}' actualizado exitosamente.";
         return RedirectToAction(nameof(Inventario));
@@ -410,6 +551,8 @@ public class AdministradorController : Controller
 
         repuesto.StockDisponible += cantidad;
         await _context.SaveChangesAsync();
+
+        await _hubContext.Clients.All.SendAsync("StockActualizado", repuesto.Id, repuesto.StockDisponible);
 
         TempData["Success"] = $"Se agregaron {cantidad} unidades a '{repuesto.Nombre}'. Stock disponible actual: {repuesto.StockDisponible}.";
         return RedirectToAction(nameof(Inventario));

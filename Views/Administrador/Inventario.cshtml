@@ -155,6 +155,7 @@
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3">ID</th>
+                        <th>Imagen</th>
                         <th>Nombre y Descripción</th>
                         <th>Tipo / Categoría</th>
                         <th>Precio Unitario</th>
@@ -167,7 +168,7 @@
                     @if (Model.Repuestos == null || !Model.Repuestos.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="8" class="text-center py-5 text-muted">
                                 <i class="bi bi-boxes fs-1 d-block mb-2 text-secondary opacity-50"></i>
                                 No se encontraron repuestos registrados con los criterios seleccionados.
                             </td>
@@ -180,27 +181,39 @@
                             <tr>
                                 <td class="ps-3 fw-semibold">#@repuesto.Id</td>
                                 <td>
+                                    @if (!string.IsNullOrEmpty(repuesto.ImagenUrl))
+                                    {
+                                        <img src="@repuesto.ImagenUrl" alt="@repuesto.Nombre" class="rounded border" style="width: 48px; height: 48px; object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small"><i class="bi bi-image fs-4"></i></span>
+                                    }
+                                </td>
+                                <td>
                                     <div class="fw-bold text-dark">@repuesto.Nombre</div>
                                     <span class="text-muted small">Cód: REP-@repuesto.Id</span>
                                 </td>
                                 <td><span class="badge bg-light text-dark border">@repuesto.Tipo</span></td>
                                 <td class="fw-bold text-dark">@($"${repuesto.Precio:N2}")</td>
                                 <td>
-                                    <div class="fw-semibold @(repuesto.StockDisponible == 0 ? "text-danger" : (repuesto.StockDisponible < 3 ? "text-warning" : ""))">@repuesto.StockDisponible unid.</div>
+                                    <div class="fw-semibold stock-texto @(repuesto.StockDisponible == 0 ? "text-danger" : (repuesto.StockDisponible < 3 ? "text-warning" : ""))">
+                                        <span class="stock-cantidad" data-producto-id="@repuesto.Id">@repuesto.StockDisponible</span> unid.
+                                    </div>
                                     <span class="text-muted small">Mínimo: @repuesto.StockMinimo</span>
                                 </td>
                                 <td>
                                     @if (repuesto.StockDisponible == 0)
                                     {
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Agotado</span>
+                                        <span class="badge stock-estado" data-producto-id="@repuesto.Id" data-ok="bg-success-subtle text-success border border-success-subtle" data-bajo="bg-warning-subtle text-warning-emphasis border border-warning-subtle" data-agotado="bg-danger-subtle text-danger border border-danger-subtle">Agotado</span>
                                     }
                                     else if (repuesto.StockDisponible < 3)
                                     {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Stock Bajo</span>
+                                        <span class="badge stock-estado" data-producto-id="@repuesto.Id" data-ok="bg-success-subtle text-success border border-success-subtle" data-bajo="bg-warning-subtle text-warning-emphasis border border-warning-subtle" data-agotado="bg-danger-subtle text-danger border border-danger-subtle">Stock Bajo</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle">En Stock</span>
+                                        <span class="badge stock-estado" data-producto-id="@repuesto.Id" data-ok="bg-success-subtle text-success border border-success-subtle" data-bajo="bg-warning-subtle text-warning-emphasis border border-warning-subtle" data-agotado="bg-danger-subtle text-danger border border-danger-subtle">En Stock</span>
                                     }
                                 </td>
                                 <td class="text-end pe-3">
@@ -235,7 +248,7 @@
                 <h5 class="modal-title fw-bold" id="modalNuevoRepuestoLabel"><i class="bi bi-plus-circle me-2"></i>Registrar Nuevo Repuesto</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form method="post" asp-controller="Administrador" asp-action="CrearRepuesto">
+            <form method="post" asp-controller="Administrador" asp-action="CrearRepuesto" enctype="multipart/form-data">
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-md-12">
@@ -266,6 +279,11 @@
                             <label asp-for="NuevoRepuesto.StockDisponible" class="form-label fw-semibold text-secondary small">Stock Inicial</label>
                             <input asp-for="NuevoRepuesto.StockDisponible" type="number" min="0" class="form-control" placeholder="0" required />
                             <span asp-validation-for="NuevoRepuesto.StockDisponible" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold text-secondary small">Imagen del Repuesto (Opcional)</label>
+                            <input type="file" name="imagenArchivo" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                            <span class="text-muted small">Formatos permitidos: JPG, JPEG, PNG, WEBP. Tamaño máximo: 5 MB.</span>
                         </div>
                     </div>
                 </div>
@@ -315,6 +333,10 @@
 {
     @foreach (var repuesto in Model.Repuestos)
     {
+        // Si el formulario de edición falló, se conservan los valores que el usuario ya ingresó.
+        var editValor = Model.RepuestoEnEdicion != null && Model.RepuestoEnEdicion.Id == repuesto.Id
+            ? Model.RepuestoEnEdicion
+            : null;
         <!-- Modal Editar Repuesto -->
         <div class="modal fade" id="modalEditarRepuesto_@repuesto.Id" tabindex="-1" aria-labelledby="modalEditarRepuestoLabel_@repuesto.Id" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -323,20 +345,23 @@
                         <h5 class="modal-title fw-bold" id="modalEditarRepuestoLabel_@repuesto.Id"><i class="bi bi-pencil-square me-2"></i>Editar Repuesto #@repuesto.Id</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <form method="post" asp-controller="Administrador" asp-action="EditarRepuesto">
+                    <form method="post" asp-controller="Administrador" asp-action="EditarRepuesto" enctype="multipart/form-data">
                         <input type="hidden" name="Id" value="@repuesto.Id" />
                         <div class="modal-body p-4">
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold text-secondary small">Nombre del Repuesto</label>
-                                    <input type="text" name="Nombre" value="@repuesto.Nombre" class="form-control" required />
+                                    <input type="text" name="Nombre" value="@(editValor?.Nombre ?? repuesto.Nombre)" class="form-control" required />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold text-secondary small">Tipo / Categoría</label>
                                     <select name="Tipo" class="form-select" required>
                                         @foreach (var cat in Model.CategoriasDisponibles)
                                         {
-                                            <option value="@cat" selected="@(repuesto.Tipo == cat)">@cat</option>
+                                            var seleccionadaEdit = editValor != null
+                                                ? editValor.Tipo == cat
+                                                : repuesto.Tipo == cat;
+                                            <option value="@cat" selected="@seleccionadaEdit">@cat</option>
                                         }
                                     </select>
                                 </div>
@@ -344,12 +369,24 @@
                                     <label class="form-label fw-semibold text-secondary small">Precio de Venta ($)</label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="number" step="0.01" min="0.01" name="Precio" value="@repuesto.Precio.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" class="form-control" required />
+                                        <input type="number" step="0.01" min="0.01" name="Precio" value="@((editValor?.Precio ?? repuesto.Precio).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))" class="form-control" required />
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold text-secondary small">Stock Disponible</label>
-                                    <input type="number" min="0" name="StockDisponible" value="@repuesto.StockDisponible" class="form-control" required />
+                                    <input type="number" min="0" name="StockDisponible" value="@(editValor?.StockDisponible ?? repuesto.StockDisponible)" class="form-control" required />
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold text-secondary small">Imagen del Repuesto</label>
+                                    @if (!string.IsNullOrEmpty(editValor?.ImagenUrl ?? repuesto.ImagenUrl))
+                                    {
+                                        <div class="mb-2">
+                                            <img src="@(editValor?.ImagenUrl ?? repuesto.ImagenUrl)" alt="@(editValor?.Nombre ?? repuesto.Nombre)" class="rounded border" style="width: 72px; height: 72px; object-fit: cover;" />
+                                            <span class="text-muted small d-block mt-1">Imagen actual. Subir una nueva la reemplazará.</span>
+                                        </div>
+                                    }
+                                    <input type="file" name="imagenArchivo" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                                    <span class="text-muted small">Formatos permitidos: JPG, JPEG, PNG, WEBP. Tamaño máximo: 5 MB.</span>
                                 </div>
                             </div>
                         </div>
@@ -395,4 +432,17 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="_StockSignalR" />
+    @if (Model.ModalAbierto != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var modalEl = document.getElementById('@Model.ModalAbierto');
+                if (modalEl) {
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            });
+        </script>
+    }
 }

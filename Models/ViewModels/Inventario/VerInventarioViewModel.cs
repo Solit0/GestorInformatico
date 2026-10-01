@@ -15,6 +15,8 @@ public class VerInventarioViewModel
     public decimal Precio { get; set; }
     
     public int StockDisponible { get; set; }
+
+    public string? ImagenUrl { get; set; }
     
     public string TextoStock => StockDisponible == 1 ? "1 unidad" : $"{StockDisponible} unidades";
 

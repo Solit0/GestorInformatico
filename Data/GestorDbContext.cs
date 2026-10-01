@@ -8,6 +8,19 @@ public class GestorDbContext : IdentityDbContext<Usuarios>
 {
     public GestorDbContext(DbContextOptions<GestorDbContext> options) : base(options)
     { }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // Regenera el token de concurrencia en cada actualización de un Repuesto
+        // para poder detectar modificaciones simultáneas entre usuarios.
+        foreach (var entry in ChangeTracker.Entries<Repuestos>()
+            .Where(e => e.State == EntityState.Modified))
+        {
+            entry.Entity.ConcurrencyToken = Guid.NewGuid();
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
     
     public DbSet<Clientes> Clientes { get; set; }
     public DbSet<Equipos> Equipos { get; set; }
@@ -40,5 +53,10 @@ public class GestorDbContext : IdentityDbContext<Usuarios>
             .WithMany(r => r.HistorialUso)
             .HasForeignKey(d => d.RepuestoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Token de concurrencia manual (SQLite no soporta rowversion de SQL Server).
+        modelBuilder.Entity<Repuestos>()
+            .Property(r => r.ConcurrencyToken)
+            .IsConcurrencyToken();
     }
 }

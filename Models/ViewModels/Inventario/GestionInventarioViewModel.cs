@@ -21,4 +21,10 @@ public class GestionInventarioViewModel
     // Formularios para modales
     public CrearRepuestoViewModel NuevoRepuesto { get; set; } = new();
     public CrearCategoriaViewModel NuevaCategoria { get; set; } = new();
+
+    // Repuesto en edición (para conservar los datos si el formulario falla)
+    public EditarRepuestoViewModel? RepuestoEnEdicion { get; set; }
+
+    // Modal a reabrir cuando el formulario vuelve con errores
+    public string? ModalAbierto { get; set; }
 }
