@@ -13,3 +13,5 @@ riderModule.iml
 *.sqlite-shm
 *.sqlite-wal
 *.sqlite-journal
+# Archivos subidos por usuarios
+wwwroot/uploads/
