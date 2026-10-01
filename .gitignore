@@ -6,3 +6,10 @@ riderModule.iml
 .idea/
 *.db
 *.sqlite
+# Archivos temporales de bases de datos SQLite
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
