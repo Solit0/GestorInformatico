@@ -35,7 +35,16 @@ public class TecnicoController : Controller
     // ==================== DASHBOARD ====================
     public async Task<IActionResult> Index()
     {
-        var ordenes = await _context.OrdenesReparacion.AsNoTracking().ToListAsync();
+        var currentUserId = _userManager.GetUserId(User);
+        var esAdmin = User.IsInRole("Administrador");
+
+        var ordenesQuery = _context.OrdenesReparacion.AsNoTracking().AsQueryable();
+        if (!esAdmin && currentUserId != null)
+        {
+            ordenesQuery = ordenesQuery.Where(o => o.TecnicoId == currentUserId);
+        }
+
+        var ordenes = await ordenesQuery.ToListAsync();
 
         var viewModel = new TecnicoDashboardViewModel
         {
@@ -272,10 +281,10 @@ public class TecnicoController : Controller
             .ToListAsync();
 
         var clientes = await _context.Clientes.AsNoTracking().ToListAsync();
-        var equipos = await _context.Equipos.Include(e => e.Cliente).AsNoTracking().ToListAsync();
         var tecnicos = await _userManager.GetUsersInRoleAsync("Tecnico");
         var adminUsers = await _userManager.GetUsersInRoleAsync("Administrador");
         var todosTecnicos = tecnicos.Concat(adminUsers).ToList();
+        var currentUserId = _userManager.GetUserId(User);
 
         var viewModel = new RecepcionOrdenesViewModel
         {
@@ -284,15 +293,12 @@ public class TecnicoController : Controller
                 Text = $"{c.Nombre} ({c.DUI})",
                 Value = c.Id.ToString()
             }),
-            ListaEquipos = equipos.Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
-            {
-                Text = $"{e.Nombre} ({e.Marca} {e.Modelo}) - {e.NumeroSerie}",
-                Value = e.Id.ToString()
-            }),
+            ListaEquipos = Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>(),
             ListaTecnicos = todosTecnicos.Select(t => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
-                Text = t.Nombre,
-                Value = t.Id
+                Text = t.Id == currentUserId ? $"{t.Nombre} (Tú)" : t.Nombre,
+                Value = t.Id,
+                Selected = t.Id == currentUserId
             }),
             ListaEstados = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
             {
@@ -300,12 +306,34 @@ public class TecnicoController : Controller
             },
             FormularioNuevaOrden = new FormNuevaOrdenViewModel
             {
-                FechaIngreso = DateTime.Now
+                FechaIngreso = DateTime.Now,
+                TecnicoId = currentUserId ?? ""
             },
             OrdenesRecientes = ordenesRecientes
         };
 
         return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ObtenerEquiposPorCliente(int clienteId)
+    {
+        if (clienteId <= 0)
+        {
+            return Json(new List<object>());
+        }
+
+        var equipos = await _context.Equipos
+            .Where(e => e.ClienteId == clienteId)
+            .OrderBy(e => e.Nombre)
+            .Select(e => new
+            {
+                id = e.Id,
+                texto = $"{e.Nombre} ({e.Marca} {e.Modelo}) - {e.NumeroSerie}"
+            })
+            .ToListAsync();
+
+        return Json(equipos);
     }
 
     [HttpPost]
@@ -314,6 +342,13 @@ public class TecnicoController : Controller
     {
         if (!ModelState.IsValid)
         {
+            return await ReconstruirRecepcionOrdenes(FormularioNuevaOrden);
+        }
+
+        var equipoValido = await _context.Equipos.AnyAsync(e => e.Id == FormularioNuevaOrden.EquipoId && e.ClienteId == FormularioNuevaOrden.ClienteId);
+        if (!equipoValido)
+        {
+            ModelState.AddModelError("FormularioNuevaOrden.EquipoId", "El equipo seleccionado no pertenece al cliente seleccionado.");
             return await ReconstruirRecepcionOrdenes(FormularioNuevaOrden);
         }
 
@@ -338,7 +373,6 @@ public class TecnicoController : Controller
     private async Task<IActionResult> ReconstruirRecepcionOrdenes(FormNuevaOrdenViewModel? formFallido = null)
     {
         var clientes = await _context.Clientes.AsNoTracking().ToListAsync();
-        var equipos = await _context.Equipos.Include(e => e.Cliente).AsNoTracking().ToListAsync();
         var tecnicos = await _userManager.GetUsersInRoleAsync("Tecnico");
         var adminUsers = await _userManager.GetUsersInRoleAsync("Administrador");
         var todosTecnicos = tecnicos.Concat(adminUsers).ToList();
@@ -362,22 +396,32 @@ public class TecnicoController : Controller
             })
             .ToListAsync();
 
+        var equiposDelCliente = formFallido != null && formFallido.ClienteId > 0
+            ? await _context.Equipos.Where(e => e.ClienteId == formFallido.ClienteId).AsNoTracking().ToListAsync()
+            : new List<Equipos>();
+
+        var currentUserId = _userManager.GetUserId(User);
+        var tecnicoIdSeleccionado = formFallido?.TecnicoId ?? currentUserId;
+
         var viewModel = new RecepcionOrdenesViewModel
         {
             ListaClientes = clientes.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
                 Text = $"{c.Nombre} ({c.DUI})",
-                Value = c.Id.ToString()
+                Value = c.Id.ToString(),
+                Selected = formFallido != null && formFallido.ClienteId == c.Id
             }),
-            ListaEquipos = equipos.Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            ListaEquipos = equiposDelCliente.Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
                 Text = $"{e.Nombre} ({e.Marca} {e.Modelo}) - {e.NumeroSerie}",
-                Value = e.Id.ToString()
+                Value = e.Id.ToString(),
+                Selected = formFallido != null && formFallido.EquipoId == e.Id
             }),
             ListaTecnicos = todosTecnicos.Select(t => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
-                Text = t.Nombre,
-                Value = t.Id
+                Text = t.Id == currentUserId ? $"{t.Nombre} (Tú)" : t.Nombre,
+                Value = t.Id,
+                Selected = t.Id == tecnicoIdSeleccionado
             }),
             ListaEstados = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
             {
@@ -385,7 +429,8 @@ public class TecnicoController : Controller
             },
             FormularioNuevaOrden = formFallido ?? new FormNuevaOrdenViewModel
             {
-                FechaIngreso = DateTime.Now
+                FechaIngreso = DateTime.Now,
+                TecnicoId = currentUserId ?? ""
             },
             OrdenesRecientes = ordenesRecientes
         };
@@ -396,12 +441,27 @@ public class TecnicoController : Controller
     // ==================== FLUJO DE TRABAJO (KANBAN) ====================
     public async Task<IActionResult> FlujoTrabajo(string? terminoBusqueda, string? tecnicoSeleccionado)
     {
+        var currentUserId = _userManager.GetUserId(User);
+        var esAdmin = User.IsInRole("Administrador");
+        var usuarioActual = await _userManager.GetUserAsync(User);
+
         var ordenesQuery = _context.OrdenesReparacion
             .Include(o => o.Equipo).ThenInclude(e => e.Cliente)
             .Include(o => o.Tecnico)
             .Include(o => o.RepuestosUsados)
             .AsNoTracking()
             .AsQueryable();
+
+        // Si es técnico: ve única y exclusivamente sus propias órdenes
+        if (!esAdmin)
+        {
+            ordenesQuery = ordenesQuery.Where(o => o.TecnicoId == currentUserId);
+            tecnicoSeleccionado = currentUserId;
+        }
+        else if (!string.IsNullOrWhiteSpace(tecnicoSeleccionado))
+        {
+            ordenesQuery = ordenesQuery.Where(o => o.TecnicoId == tecnicoSeleccionado);
+        }
 
         if (!string.IsNullOrWhiteSpace(terminoBusqueda))
         {
@@ -410,11 +470,6 @@ public class TecnicoController : Controller
                 o.Id.ToString().Contains(termino) ||
                 (o.Equipo != null && o.Equipo.Nombre.Contains(termino)) ||
                 (o.Equipo != null && o.Equipo.Cliente != null && o.Equipo.Cliente.Nombre.Contains(termino)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(tecnicoSeleccionado))
-        {
-            ordenesQuery = ordenesQuery.Where(o => o.TecnicoId == tecnicoSeleccionado);
         }
 
         var ordenes = await ordenesQuery.ToListAsync();
@@ -439,9 +494,11 @@ public class TecnicoController : Controller
         {
             TerminoBusqueda = terminoBusqueda,
             TecnicoSeleccionado = tecnicoSeleccionado,
+            EsAdmin = esAdmin,
+            NombreTecnicoLogueado = usuarioActual?.Nombre ?? usuarioActual?.UserName ?? "Técnico",
             ListaTecnicos = todosTecnicos.Select(t => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
-                Text = t.Nombre,
+                Text = t.Id == currentUserId ? $"{t.Nombre} (Mis órdenes)" : t.Nombre,
                 Value = t.Id,
                 Selected = t.Id == tecnicoSeleccionado
             }),
@@ -468,6 +525,13 @@ public class TecnicoController : Controller
         if (orden == null)
         {
             TempData["Error"] = "Orden no encontrada.";
+            return RedirectToAction(nameof(FlujoTrabajo));
+        }
+
+        var currentUserId = _userManager.GetUserId(User);
+        if (!User.IsInRole("Administrador") && orden.TecnicoId != currentUserId)
+        {
+            TempData["Error"] = "No tienes permisos para modificar órdenes asignadas a otro técnico.";
             return RedirectToAction(nameof(FlujoTrabajo));
         }
 
@@ -523,6 +587,42 @@ public class TecnicoController : Controller
                 orden.FechaNotificacion = DateTime.Now;
             }
         }
+        else if (nuevoEstado == "No se pudo")
+        {
+            var cliente = orden.Equipo?.Cliente;
+            if (cliente != null && cliente.RecibeNotificacionesCorreo && !string.IsNullOrWhiteSpace(cliente.Email))
+            {
+                var equipoInfo = orden.Equipo != null ? $"{orden.Equipo.Nombre} ({orden.Equipo.Marca} {orden.Equipo.Modelo})" : "su equipo";
+                var asunto = $"Diagnóstico finalizado - Orden #{orden.Id} - Gestor Informático";
+                var motivo = !string.IsNullOrWhiteSpace(orden.Observaciones) 
+                    ? orden.Observaciones 
+                    : (!string.IsNullOrWhiteSpace(orden.Descripcion) ? orden.Descripcion : "No fue posible realizar la reparación tras la revisión técnica.");
+                var cuerpoHtml = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px;'>
+                        <h2 style='color: #dc3545;'>Actualización de su orden de reparación</h2>
+                        <p>Estimado/a <strong>{cliente.Nombre}</strong>,</p>
+                        <p>Le notificamos que el diagnóstico de su equipo <strong>{equipoInfo}</strong> correspondiente a la orden <strong>#{orden.Id}</strong> ha finalizado. Lamentamos informarle que <strong>no fue posible completar la reparación</strong>.</p>
+                        <div style='background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 4px;'>
+                            <p style='margin: 0 0 8px 0;'><strong>Detalles del diagnóstico:</strong></p>
+                            <ul style='margin: 0; padding-left: 20px;'>
+                                <li><strong>Nº de Orden:</strong> #{orden.Id}</li>
+                                <li><strong>Equipo:</strong> {equipoInfo}</li>
+                                <li><strong>Número de Serie:</strong> {orden.Equipo?.NumeroSerie ?? "N/A"}</li>
+                                <li><strong>Falla reportada:</strong> {orden.Descripcion}</li>
+                                <li><strong>Diagnóstico / Observaciones:</strong> {motivo}</li>
+                                <li><strong>Fecha de Salida/Diagnóstico:</strong> {orden.FechaSalida?.ToString("dd/MM/yyyy HH:mm") ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm")}</li>
+                            </ul>
+                        </div>
+                        <p>Le invitamos a presentarse a nuestro taller para retirar su dispositivo o consultar con nuestro equipo técnico para más detalles.</p>
+                        <hr style='border: none; border-top: 1px solid #dee2e6; margin: 20px 0;' />
+                        <p style='color: #888888; font-size: 0.8em;'>Taller Gestor Informático</p>
+                    </div>";
+
+                await _emailService.EnviarCorreoAsync(cliente.Email.Trim(), asunto, cuerpoHtml);
+                orden.NotificacionEnviada = true;
+                orden.FechaNotificacion = DateTime.Now;
+            }
+        }
 
         await _context.SaveChangesAsync();
 
@@ -541,6 +641,13 @@ public class TecnicoController : Controller
         if (orden == null)
         {
             TempData["Error"] = "Orden no encontrada.";
+            return RedirectToAction(nameof(FlujoTrabajo));
+        }
+
+        var currentUserId = _userManager.GetUserId(User);
+        if (!User.IsInRole("Administrador") && orden.TecnicoId != currentUserId)
+        {
+            TempData["Error"] = "No tienes permisos para finalizar órdenes asignadas a otro técnico.";
             return RedirectToAction(nameof(FlujoTrabajo));
         }
 
@@ -621,6 +728,13 @@ public class TecnicoController : Controller
             return RedirectToAction(nameof(Inventario));
         }
 
+        var currentUserId = _userManager.GetUserId(User);
+        if (!User.IsInRole("Administrador") && orden.TecnicoId != currentUserId)
+        {
+            TempData["Error"] = "Solo puedes asignar repuestos a tus propias órdenes de trabajo.";
+            return RedirectToAction(nameof(Inventario));
+        }
+
         var repuesto = await _context.Repuestos.FindAsync(repuestoId);
         if (repuesto == null)
         {
@@ -694,11 +808,21 @@ public class TecnicoController : Controller
         var stockBajo = todosRepuestos.Count(r => r.StockDisponible > 0 && r.StockDisponible < 3);
         var agotado = todosRepuestos.Count(r => r.StockDisponible == 0);
 
-        var ordenesActivas = await _context.OrdenesReparacion
+        var currentUserId = _userManager.GetUserId(User);
+        var esAdmin = User.IsInRole("Administrador");
+
+        var ordenesActivasQuery = _context.OrdenesReparacion
             .Where(o => o.Estado == "Pendiente" || o.Estado == "En reparacion")
             .Include(o => o.Equipo).ThenInclude(e => e.Cliente)
             .AsNoTracking()
-            .ToListAsync();
+            .AsQueryable();
+
+        if (!esAdmin && currentUserId != null)
+        {
+            ordenesActivasQuery = ordenesActivasQuery.Where(o => o.TecnicoId == currentUserId);
+        }
+
+        var ordenesActivas = await ordenesActivasQuery.ToListAsync();
 
         if (errorStock != null)
         {
@@ -768,11 +892,21 @@ public class TecnicoController : Controller
                 string.Equals(r.Tipo, categoriaSeleccionada, StringComparison.OrdinalIgnoreCase));
         }
 
-        var ordenesActivas = await _context.OrdenesReparacion
+        var currentUserId = _userManager.GetUserId(User);
+        var esAdmin = User.IsInRole("Administrador");
+
+        var ordenesActivasQuery = _context.OrdenesReparacion
             .Where(o => o.Estado == "Pendiente" || o.Estado == "En reparacion")
             .Include(o => o.Equipo).ThenInclude(e => e.Cliente)
             .AsNoTracking()
-            .ToListAsync();
+            .AsQueryable();
+
+        if (!esAdmin && currentUserId != null)
+        {
+            ordenesActivasQuery = ordenesActivasQuery.Where(o => o.TecnicoId == currentUserId);
+        }
+
+        var ordenesActivas = await ordenesActivasQuery.ToListAsync();
 
         var viewModel = new InventarioVM
         {

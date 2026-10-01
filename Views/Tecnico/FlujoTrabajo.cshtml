@@ -49,24 +49,35 @@
     <form method="get" asp-controller="Tecnico" asp-action="FlujoTrabajo" class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="card-body p-3">
             <div class="row g-2 align-items-center">
-                <div class="col-md-4">
+                <div class="col-md-5">
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
                         <input type="text" name="terminoBusqueda" value="@Model.TerminoBusqueda" class="form-control" placeholder="Buscar por Nº orden, cliente, equipo..." />
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <select name="tecnicoSeleccionado" class="form-select" onchange="this.form.submit()">
-                        <option value="">Todos los técnicos asignados</option>
-                        @if (Model.ListaTecnicos != null)
-                        {
-                            @foreach (var tecnico in Model.ListaTecnicos)
+                @if (Model.EsAdmin)
+                {
+                    <div class="col-md-4">
+                        <select name="tecnicoSeleccionado" class="form-select" onchange="this.form.submit()">
+                            <option value="" selected="@(string.IsNullOrEmpty(Model.TecnicoSeleccionado))">Todas las órdenes del taller</option>
+                            @if (Model.ListaTecnicos != null)
                             {
-                                <option value="@tecnico.Value" selected="@tecnico.Selected">@tecnico.Text</option>
+                                @foreach (var tecnico in Model.ListaTecnicos)
+                                {
+                                    <option value="@tecnico.Value" selected="@tecnico.Selected">@tecnico.Text</option>
+                                }
                             }
-                        }
-                    </select>
-                </div>
+                        </select>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-4 d-flex align-items-center">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6 rounded-pill">
+                            <i class="bi bi-person-check-fill me-1"></i>Órdenes asignadas a: <strong>@Model.NombreTecnicoLogueado</strong>
+                        </span>
+                    </div>
+                }
                 <div class="col-md-3 text-md-end">
                     <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search me-1"></i>Buscar</button>
                     <a asp-controller="Tecnico" asp-action="FlujoTrabajo" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar</a>

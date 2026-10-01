@@ -8,6 +8,8 @@ public class FlujoVM
     
     public string? TecnicoSeleccionado { get; set; }
     public IEnumerable<SelectListItem>? ListaTecnicos { get; set; }
+    public bool EsAdmin { get; set; }
+    public string? NombreTecnicoLogueado { get; set; }
 
     // Las 4 columnas de tu diseño
     public List<EstadosReparacionViewModel> OrdenesPendientes { get; set; } = new List<EstadosReparacionViewModel>();

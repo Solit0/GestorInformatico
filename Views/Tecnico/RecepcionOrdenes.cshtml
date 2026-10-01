@@ -61,21 +61,30 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold text-secondary small">Cliente</label>
                             <div class="input-group">
-                                <select asp-for="FormularioNuevaOrden.ClienteId" asp-items="Model.ListaClientes" class="form-select">
-                                    <option selected disabled>Seleccionar cliente registrado...</option>
+                                <select asp-for="FormularioNuevaOrden.ClienteId" asp-items="Model.ListaClientes" id="selectCliente" class="form-select">
+                                    <option value="" selected disabled>Seleccionar cliente registrado...</option>
                                 </select>
                                 <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="btn btn-outline-secondary" title="Nuevo Cliente">
-                                    <i class="bi bi-plus"></i>
+                                    <i class="bi bi-person-plus"></i>
                                 </a>
                             </div>
                             <span asp-validation-for="FormularioNuevaOrden.ClienteId" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary small">Equipo del Cliente</label>
-                            <select asp-for="FormularioNuevaOrden.EquipoId" asp-items="Model.ListaEquipos" class="form-select">
-                                <option selected disabled>Seleccionar equipo...</option>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label class="form-label fw-semibold text-secondary small mb-1">Equipo del Cliente</label>
+                                <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="text-decoration-none small text-muted" title="Registrar un nuevo equipo">
+                                    <i class="bi bi-laptop me-1"></i>Gestionar equipos
+                                </a>
+                            </div>
+                            <select asp-for="FormularioNuevaOrden.EquipoId" asp-items="Model.ListaEquipos" id="selectEquipo" class="form-select" disabled="@(Model.FormularioNuevaOrden?.ClienteId > 0 ? null : "disabled")">
+                                <option value="" selected disabled>@(Model.FormularioNuevaOrden?.ClienteId > 0 ? "Seleccionar equipo..." : "Primero seleccione un cliente...")</option>
                             </select>
+                            <div id="avisoSinEquipos" class="alert alert-warning py-2 px-3 small mt-2 d-none">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Este cliente aún no tiene equipos registrados. 
+                                <a asp-controller="Tecnico" asp-action="ClientesEquipos" class="alert-link">Registra un equipo aquí</a> antes de crear la orden.
+                            </div>
                             <span asp-validation-for="FormularioNuevaOrden.EquipoId" class="text-danger small"></span>
                         </div>
 
@@ -213,7 +222,7 @@
                                                 }
                                             </td>
                                             <td class="text-end pe-3">
-                                                <a asp-controller="Tecnico" asp-action="FlujoTrabajo" class="btn btn-sm btn-outline-warning text-dark" title="Ver en Tablero">
+                                                <a asp-controller="Tecnico" asp-action="FlujoTrabajo" asp-route-terminoBusqueda="@orden.Id" class="btn btn-sm btn-outline-warning text-dark" title="Ver en Tablero">
                                                     <i class="bi bi-kanban"></i>
                                                 </a>
                                             </td>
@@ -231,4 +240,75 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectCliente = document.getElementById('selectCliente');
+            const selectEquipo = document.getElementById('selectEquipo');
+            const avisoSinEquipos = document.getElementById('avisoSinEquipos');
+            const equipoSeleccionadoInicial = '@(Model.FormularioNuevaOrden?.EquipoId > 0 ? Model.FormularioNuevaOrden.EquipoId.ToString() : "")';
+
+            async function cargarEquipos(clienteId, equipoSeleccionadoId = null) {
+                if (!clienteId || clienteId === '') {
+                    selectEquipo.innerHTML = '<option value="" selected disabled>Primero seleccione un cliente...</option>';
+                    selectEquipo.disabled = true;
+                    if (avisoSinEquipos) avisoSinEquipos.classList.add('d-none');
+                    return;
+                }
+
+                selectEquipo.disabled = true;
+                selectEquipo.innerHTML = '<option value="" selected disabled>Cargando equipos del cliente...</option>';
+
+                try {
+                    const response = await fetch(`/Tecnico/ObtenerEquiposPorCliente?clienteId=${encodeURIComponent(clienteId)}`);
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+                    const equipos = await response.json();
+
+                    selectEquipo.innerHTML = '';
+                    if (!equipos || equipos.length === 0) {
+                        selectEquipo.innerHTML = '<option value="" selected disabled>Este cliente no tiene equipos registrados</option>';
+                        selectEquipo.disabled = true;
+                        if (avisoSinEquipos) avisoSinEquipos.classList.remove('d-none');
+                    } else {
+                        if (avisoSinEquipos) avisoSinEquipos.classList.add('d-none');
+                        const defaultOpt = document.createElement('option');
+                        defaultOpt.value = '';
+                        defaultOpt.textContent = 'Seleccionar equipo...';
+                        defaultOpt.disabled = true;
+                        if (!equipoSeleccionadoId) {
+                            defaultOpt.selected = true;
+                        }
+                        selectEquipo.appendChild(defaultOpt);
+
+                        equipos.forEach(eq => {
+                            const opt = document.createElement('option');
+                            opt.value = eq.id;
+                            opt.textContent = eq.texto;
+                            if (equipoSeleccionadoId && eq.id.toString() === equipoSeleccionadoId.toString()) {
+                                opt.selected = true;
+                            }
+                            selectEquipo.appendChild(opt);
+                        });
+                        selectEquipo.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error al cargar equipos:', error);
+                    selectEquipo.innerHTML = '<option value="" selected disabled>Error al cargar equipos</option>';
+                    selectEquipo.disabled = true;
+                }
+            }
+
+            if (selectCliente) {
+                selectCliente.addEventListener('change', function () {
+                    cargarEquipos(this.value);
+                });
+
+                // Si ya hay un cliente seleccionado (ej. retorno por error de validación)
+                if (selectCliente.value && selectCliente.value !== '') {
+                    cargarEquipos(selectCliente.value, equipoSeleccionadoInicial);
+                }
+            }
+        });
+    </script>
 }
